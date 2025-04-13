@@ -1,21 +1,68 @@
-const DriveView = () => {
-    const mockFolders = [
-      { name: "Projects", id: "folder1", createdAt: "2024-03-01" },
-      { name: "Invoices", id: "folder2", createdAt: "2024-02-20" },
-    ];
+// src/components/DriveView.js
+import React, { useEffect, useState } from "react";
+import DriveTable from "./DriveTable";
+import { fetchDriveItems } from "../api/client"; // Assumes you have this set up
+
+export default function DriveView() {
+  const [driveItems, setDriveItems] = useState([]);
+  const [filter, setFilter] = useState("all"); // "file", "folder", "all"
+
+
+  useEffect(() => {
+    fetchDriveItems(filter).then((result) => {
+      if (result.success) {
+        setDriveItems(result.data);
+      } else {
+        console.error("Failed to load drive data");
+      }
+    });
+  }, [filter]);
   
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        {mockFolders.map((folder) => (
-          <div key={folder.id} className="p-4 border rounded shadow">
-            <h3 className="font-semibold">{folder.name}</h3>
-            <p>ID: {folder.id}</p>
-            <p>Created: {folder.createdAt}</p>
-          </div>
-        ))}
+  
+
+  return (
+    <div style={styles.container}>
+      <h2 style={styles.heading}>Drive</h2>
+
+      <div style={styles.controls}>
+        <label htmlFor="filter">View:</label>
+        <select
+          id="filter"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={styles.select}
+        >
+          <option value="all">All</option>
+          <option value="folder">Folders</option>
+          <option value="file">Files</option>
+        </select>
       </div>
-    );
-  };
-  
-  export default DriveView;
-  
+
+      <DriveTable items={driveItems} />
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    padding: "2rem",
+    backgroundColor: "#f5f5f5",
+    minHeight: "100vh",
+    fontFamily: "Arial, sans-serif",
+  },
+  heading: {
+    fontSize: "1.6rem",
+    marginBottom: "1rem",
+    color: "#333",
+  },
+  controls: {
+    marginBottom: "1rem",
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  select: {
+    padding: "0.4rem 0.6rem",
+    fontSize: "0.95rem",
+  },
+};

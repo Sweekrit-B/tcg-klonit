@@ -14,3 +14,27 @@ export async function addNumbers(a, b) {
     return { success: false };
   }
 }
+
+export async function fetchDriveItems(type = "all") {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/list_drive", { type });
+    return { success: true, data: response.data.items };
+  } catch (error) {
+    console.error("Error fetching drive items:", error);
+    return { success: false, data: [] };
+  }
+}
+
+// export async function fetchDriveFolders() {
+//   try {
+//     const response = await axios.post("http://localhost:5100/tool/list_drive_folders");
+//     return { success: true, data: response.data.items };
+//   } catch (error) {
+//     console.error("Error fetching drive folders:", error);
+//     return { success: false, data: [] };
+//   }
+// }
+
+
+
+

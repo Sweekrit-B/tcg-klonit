@@ -46,6 +46,27 @@ app.post("/tool/add", async (req, res) => {
   }
 });
 
+//mock drive folders until tool implemented (TODO)
+app.post("/tool/list_drive", async (req, res) => {
+  const { type } = req.body;
+
+  console.log("Received list_drive request with type:", type);
+
+  const allItems = [
+    { id: "1", name: "Project Docs", createdAt: "2024-03-01", type: "folder" },
+    { id: "2", name: "Specs Sheet", createdAt: "2024-04-02", type: "file", mimeType: "application/vnd.google-docs" },
+    { id: "3", name: "Q2 Report.pdf", createdAt: "2024-04-03", type: "file", mimeType: "application/pdf" },
+    { id: "4", name: "Slides", createdAt: "2024-04-04", type: "file", mimeType: "application/vnd.google-slides" },
+    { id: "5", name: "Photos", createdAt: "2024-04-05", type: "folder" },
+  ];
+
+  const filtered =
+    type === "all" ? allItems : allItems.filter((item) => item.type === type);
+
+  res.status(200).json({ items: filtered });
+});
+
+
 //Start express on the defined port
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 export default app;
