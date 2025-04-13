@@ -156,7 +156,10 @@ server.tool(
     }
 );
 
-// List Tables Tool: uses query tool to simply show all tables in our database
+// NOTE: List Tables Tool: uses query tool to simply show all tables in our database,
+// this can be done using just the query tool but it is easier to just click the button.
+// Can be removed easily
+
 // Takes in no parameters, just prints the tables
 server.tool(
     "listTables",
@@ -202,7 +205,9 @@ server.tool(
     }
 );
 
-// Table Schema Tool
+// NOTE: Table Schema Tool: this isn't super necessary, but it is nice to 
+// be able to view data about the table, we can remove this easily
+
 // Takes in a table name and returns the schema of that table
 server.tool(
     "tableSchema",
