@@ -20,7 +20,7 @@ export default function DriveTable({ items }) {
           <tr>
             <th style={styles.th}>Icon</th>
             <th style={styles.th}>Name</th>
-            <th style={styles.th}>Created</th>
+            {/* <th style={styles.th}>Created</th> */}
             <th style={styles.th}>Type</th>
           </tr>
         </thead>
@@ -41,7 +41,7 @@ export default function DriveTable({ items }) {
                 )}
               </td>
               <td style={styles.td}>{item.name}</td>
-              <td style={styles.td}>{item.createdAt}</td>
+              {/* <td style={styles.td}>{item.createdAt}</td> */}
               <td style={styles.td}>
                 {item.type === "folder"
                   ? "Folder"

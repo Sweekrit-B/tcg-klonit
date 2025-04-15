@@ -6,7 +6,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { google } from "googleapis";
 import { authenticate } from "@google-cloud/local-auth";
-import fs from "fs/promises";
+import fs from "fs/promises"; 
 import path from "path";
 
 // Define the MCP server
@@ -17,7 +17,7 @@ const server = new McpServer({
 
 // Google Drive API setup
 const SCOPES = ["https://www.googleapis.com/auth/drive.readonly"];
-const BACKEND_DIR = "/Users/bcan/Desktop/tcg-klonit/backend";
+const BACKEND_DIR = process.cwd();
 const TOKEN_PATH = path.join(BACKEND_DIR, "token.json");
 const CREDENTIALS_PATH = path.join(BACKEND_DIR, "credentials.json");
 

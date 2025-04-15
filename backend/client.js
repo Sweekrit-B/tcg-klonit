@@ -46,25 +46,61 @@ app.post("/tool/add", async (req, res) => {
   }
 });
 
-//mock drive folders until tool implemented (TODO)
-app.post("/tool/list_drive", async (req, res) => {
-  const { type } = req.body;
+//real implementation tools for drive
+// Route to list Google Drive items from a specific folder (default: root)
+app.post("/tool/drive_list", async (req, res) => {
+  const { folderId = "root", maxResults = 99 } = req.body;
 
-  console.log("Received list_drive request with type:", type);
+  try {
+    // Call the MCP 'list' tool to fetch Google Drive contents
+    const response = await client.callTool({
+      name: "list",
+      arguments: { folderId, maxResults },
+    });
 
-  const allItems = [
-    { id: "1", name: "Project Docs", createdAt: "2024-03-01", type: "folder" },
-    { id: "2", name: "Specs Sheet", createdAt: "2024-04-02", type: "file", mimeType: "application/vnd.google-docs" },
-    { id: "3", name: "Q2 Report.pdf", createdAt: "2024-04-03", type: "file", mimeType: "application/pdf" },
-    { id: "4", name: "Slides", createdAt: "2024-04-04", type: "file", mimeType: "application/vnd.google-slides" },
-    { id: "5", name: "Photos", createdAt: "2024-04-05", type: "folder" },
-  ];
+    // Format each line of the returned MCP response into a structured object
+    const items = response.content.map((item) => {
+      // Example item.text: "Specs Sheet (application/vnd.google-docs) [ID: abc123]"
+      const match = item.text.match(/^(.+?) \((.+?)\) \[ID: (.+?)\]$/);
+      if (!match) return null;
 
-  const filtered =
-    type === "all" ? allItems : allItems.filter((item) => item.type === type);
+      return {
+        id: match[3],         // Google Drive file/folder ID
+        name: match[1],       // File or folder name
+        mimeType: match[2],   // MIME type from Google
+        type: match[2].includes("folder") ? "folder" : "file", // For frontend filtering
+      };
+    }).filter(Boolean); // Filter out any null matches
 
-  res.status(200).json({ items: filtered });
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error in /tool/drive_list:", error);
+    res.status(500).json({ error: "Failed to fetch Drive items" });
+  }
 });
+
+
+//TODO add search routes and tool routes
+
+//mock drive folders until tool implemented (TODO)
+// app.post("/tool/list_drive", async (req, res) => {
+//   const { type } = req.body;
+
+//   console.log("Received list_drive request with type:", type);
+
+//   const allItems = [
+//     { id: "1", name: "Project Docs", createdAt: "2024-03-01", type: "folder" },
+//     { id: "2", name: "Specs Sheet", createdAt: "2024-04-02", type: "file", mimeType: "application/vnd.google-docs" },
+//     { id: "3", name: "Q2 Report.pdf", createdAt: "2024-04-03", type: "file", mimeType: "application/pdf" },
+//     { id: "4", name: "Slides", createdAt: "2024-04-04", type: "file", mimeType: "application/vnd.google-slides" },
+//     { id: "5", name: "Photos", createdAt: "2024-04-05", type: "folder" },
+//   ];
+
+//   const filtered =
+//     type === "all" ? allItems : allItems.filter((item) => item.type === type);
+
+//   res.status(200).json({ items: filtered });
+// });
 
 
 //Start express on the defined port
