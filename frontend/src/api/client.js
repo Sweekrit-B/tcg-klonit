@@ -17,23 +17,25 @@ export async function addNumbers(a, b) {
 
 export async function fetchDriveItems(type = "all") {
   try {
-    const response = await axios.post("http://localhost:5100/tool/list_drive", { type });
-    return { success: true, data: response.data.items };
+    const response = await axios.post("http://localhost:5100/tool/drive_list", {
+      folderId: "root",
+      maxResults: 99,
+    });
+
+    const allItems = response.data.items;
+    const filtered = type === "all" ? allItems : allItems.filter(item => item.type === type);
+
+    return { success: true, data: filtered };
   } catch (error) {
     console.error("Error fetching drive items:", error);
     return { success: false, data: [] };
   }
 }
 
-// export async function fetchDriveFolders() {
-//   try {
-//     const response = await axios.post("http://localhost:5100/tool/list_drive_folders");
-//     return { success: true, data: response.data.items };
-//   } catch (error) {
-//     console.error("Error fetching drive folders:", error);
-//     return { success: false, data: [] };
-//   }
-// }
+
+//TODO add fetchDriveSearch(query) and fetchDriveRead(fileId)
+
+
 
 
 
