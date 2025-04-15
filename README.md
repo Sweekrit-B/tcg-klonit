@@ -59,6 +59,42 @@ This script will:
 - Create the necessary tables (users and products)
 - Insert sample data
 
+### PostgreSQL Installation and Configuration
+
+If you're new to PostgreSQL, here's how to get started:
+
+#### Installing PostgreSQL
+
+1. **Download PostgreSQL** from the [official website](https://www.postgresql.org/download/)
+2. **Run the installer** and follow the prompts
+3. **During installation**:
+   - You'll be asked to set a password for the `postgres` superuser
+   - Remember this password - you'll need it to connect to the database
+   - Keep the default port (5432)
+
+#### Using the Default Configuration
+
+The application includes default database configuration values:
+
+To use these default values, you need to:
+
+1. **Create the `mcp_user` in PostgreSQL**:
+
+   - Open a terminal/command prompt
+   - Connect to PostgreSQL as the superuser:
+     ```
+     psql -U postgres
+     ```
+   - When prompted, enter the password you set during installation
+   - Create the user and grant privileges:
+     ```sql
+     CREATE USER mcp_user WITH PASSWORD 'mcp_password';
+     ALTER USER mcp_user WITH SUPERUSER;
+     ```
+   - Exit psql by typing `\q` and pressing Enter
+
+2. **Edit the `.env` file** to use these default values (or keep them as they are)
+
 ## Running the Server
 
 Start the MCP server:
