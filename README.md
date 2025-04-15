@@ -55,14 +55,15 @@ To test the MCP server, you can use the [MCP Inspector](https://github.com/model
 
 1. First, navigate to the `backend` directory if you are not in it already:
 
-   ```bash
-   cd backend
-   ```
+```bash
+cd backend
+```
 
 2. Run the following terminal command:
-   ```bash
-   npx @modelcontextprotocol/inspector node server.js
-   ```
+   
+```bash
+npx @modelcontextprotocol/inspector node server.js
+```
 
 # Frontend
 
