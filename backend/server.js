@@ -17,9 +17,9 @@ const server = new McpServer({
 
 // Google Drive API setup
 const SCOPES = ["https://www.googleapis.com/auth/drive.readonly"];
-const BACKEND_DIR = "/Users/bcan/Desktop/tcg-klonit/backend";
-const TOKEN_PATH = path.join(BACKEND_DIR, "token.json");
-const CREDENTIALS_PATH = path.join(BACKEND_DIR, "credentials.json");
+// const BACKEND_DIR = "/Users/bcan/Desktop/tcg-klonit/backend";
+const TOKEN_PATH = path.join("./token.json");
+const CREDENTIALS_PATH = path.join("./credentials_drive.json");
 
 // Cache for the authenticated client
 let cachedClient = null;
@@ -168,9 +168,7 @@ server.tool(
       const mimeType = metaRes.data.mimeType;
       if (!mimeType) {
         return {
-          content: [
-            { type: "text", text: "Error: File MIME type not found." },
-          ],
+          content: [{ type: "text", text: "Error: File MIME type not found." }],
         };
       }
 
