@@ -1,5 +1,10 @@
 # Backend
 
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) installed (version 14 or higher recommended)
+- A Google account to access Google Cloud Console
+
 ## Getting Started
 
 Before the MCP server can access data from Google Drive, it needs to be authenticated through Google Cloud using OAuth 2.0.
