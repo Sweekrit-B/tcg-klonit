@@ -18,7 +18,7 @@ export async function addNumbers(a, b) {
 export async function fetchDriveItems(type = "all") {
   try {
     const response = await axios.post("http://localhost:5100/tool/drive_list", {
-      folderId: "root",
+      folderId: "1qjdL4hXBnFXbFTPHRYTw5FoSfTINee17",
       maxResults: 99,
     });
 
