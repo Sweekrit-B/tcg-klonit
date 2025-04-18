@@ -17,7 +17,7 @@ const server = new McpServer({
 
 // Google Calendar API setup
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
-const BACKEND_DIR = "/Users/mallika/tcg-klonit/backend"; // Update this path to your backend directory
+const BACKEND_DIR = process.cwd(); // Update this path to your backend directory
 const TOKEN_PATH = path.join(BACKEND_DIR, "token.json");
 const CREDENTIALS_PATH = path.join(BACKEND_DIR, "credentials.json");
 
