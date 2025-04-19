@@ -28,7 +28,7 @@ export async function fetchDriveItems(type = "all") {
 export async function fetchCalendarEvents() {
   try {
     const response = await axios.post("http://localhost:5100/tool/calendar_events", {
-      calendarId: "primary",
+      calendarId: "60d060abc272435ca823a4c35ee3d37fba57e24e27ff8cdc5f1d2cb48185c797@group.calendar.google.com",
       maxResults: 10,
     });
     return { success: true, data: response.data.events };

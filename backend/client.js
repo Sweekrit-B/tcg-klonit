@@ -58,7 +58,7 @@ app.post("/tool/drive_list", async (req, res) => {
 });
 
 app.post("/tool/calendar_events", async (req, res) => {
-  const { calendarId = "primary", maxResults = 10 } = req.body;
+  const { calendarId = "60d060abc272435ca823a4c35ee3d37fba57e24e27ff8cdc5f1d2cb48185c797@group.calendar.google.com", maxResults = 10 } = req.body;
 
   try {
     const response = await client.callTool({
