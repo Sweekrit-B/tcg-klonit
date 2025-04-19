@@ -25,16 +25,15 @@ export async function fetchDriveItems(type = "all") {
   }
 }
 
-// export async function fetchDriveFolders() {
-//   try {
-//     const response = await axios.post("http://localhost:5100/tool/list_drive_folders");
-//     return { success: true, data: response.data.items };
-//   } catch (error) {
-//     console.error("Error fetching drive folders:", error);
-//     return { success: false, data: [] };
-//   }
-// }
-
-
-
-
+export async function fetchCalendarEvents() {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/calendar_events", {
+      calendarId: "primary",
+      maxResults: 10,
+    });
+    return { success: true, data: response.data.events };
+  } catch (error) {
+    console.error("Error fetching calendar events:", error);
+    return { success: false, data: [] };
+  }
+}

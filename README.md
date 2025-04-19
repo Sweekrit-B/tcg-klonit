@@ -83,9 +83,6 @@ npm install @modelcontextprotocol/sdk googleapis @google-cloud/local-auth zod ex
 
 1. Make sure your `server.js` file has the correct path to your `credentials.json` file:
 
-```javascript
-const BACKEND_DIR = "/path/to/your/backend"; // Update this path to your backend directory
-```
 
 ### Running the Server
 
