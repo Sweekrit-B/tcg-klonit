@@ -63,6 +63,7 @@ app.post("/tool/drive_list", async (req, res) => {
   } catch (error) {
     console.error("Error in /tool/drive_list:", error);
     res.status(500).json({ error: "Failed to fetch Drive items" });
+  }
 });
 
 
@@ -126,7 +127,7 @@ app.post("/tool/calendar_events", async (req, res) => {
     console.error("Error fetching calendar events:", error);
     res.status(500).json({ error: "Failed to fetch calendar events" });
   }
-  }
+  
 });
 
 //Start express on the defined port
