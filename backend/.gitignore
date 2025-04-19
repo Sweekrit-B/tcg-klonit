@@ -14,3 +14,5 @@ logs
 # OS specific files
 .DS_Store
 Thumbs.db
+credentials_drive.json
+.env
