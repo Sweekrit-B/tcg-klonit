@@ -1,18 +1,16 @@
 // src/components/CalendarView.js
 import React, { useEffect, useState } from "react";
-
-const mockCalendarEvents = [
-  { id: "1", title: "Team Sync", start: "2024-04-15T10:00", end: "2024-04-15T11:00" },
-  { id: "2", title: "1:1 with Alex", start: "2024-04-15T13:00", end: "2024-04-15T13:30" },
-  { id: "3", title: "Design Review", start: "2024-04-16T09:30", end: "2024-04-16T10:30" },
-];
+import { fetchCalendarEvents } from "../api/client";
 
 export default function CalendarView() {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    // 🛠 Replace this with a real fetch to MCP tool later
-    setEvents(mockCalendarEvents);
+    fetchCalendarEvents().then((result) => {
+      if (result.success) {
+        setEvents(result.data);
+      }
+    });
   }, []);
 
   return (
