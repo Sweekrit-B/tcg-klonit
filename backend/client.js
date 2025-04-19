@@ -29,19 +29,65 @@ await client.connect(transport);
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
+app.post("/tool/drive_list", async (req, res) => {
+  const { folderId = "root", maxResults = 99 } = req.body;
 
-app.post("/tool/add", async (req, res) => {
-  const { a, b } = req.body;
   try {
     const response = await client.callTool({
-      name: "add",
+      name: "list",
+      arguments: { folderId, maxResults },
+    });
+
+    const items = response.content.map((item) => {
+      const match = item.text.match(/^(.+?) \((.+?)\) \[ID: (.+?)\]$/);
+      if (!match) return null;
+
+      return {
+        id: match[3],
+        name: match[1],
+        mimeType: match[2],
+        type: match[2].includes("folder") ? "folder" : "file",
+      };
+    }).filter(Boolean);
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error fetching drive items:", error);
+    res.status(500).json({ error: "Failed to fetch drive items" });
+  }
+});
+
+app.post("/tool/calendar_events", async (req, res) => {
+  const { calendarId = "60d060abc272435ca823a4c35ee3d37fba57e24e27ff8cdc5f1d2cb48185c797@group.calendar.google.com", maxResults = 10 } = req.body;
+
+  try {
+    const response = await client.callTool({
+      name: "listEvents",
       arguments: {
-        a: a,
-        b: b,
+        calendarId,
+        maxResults,
       },
     });
-    res.status(200).json(response);
+
+    const events = response.content.map((item) => {
+      const match = item.text.match(/^(.*?) \((.*?) - (.*?)\) \[ID: (.*?)\]$/);
+      if (!match) return null;
+    
+      const [, title, start, end, id] = match;
+      return {
+        id,
+        title,
+        start,
+        end,
+      };
+    }).filter(Boolean); // remove nulls if any don't match
+    
+    res.status(200).json({ events });
+    
   } catch (error) {
+    console.error("Error fetching calendar events:", error);
+    res.status(500).json({ error: "Failed to fetch calendar events" });
+  }
     res.status(500).json({ error: "Error calling tool" });
   }
 });
