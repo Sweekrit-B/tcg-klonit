@@ -46,6 +46,9 @@ app.post("/tool/add", async (req, res) => {
   }
 });
 
+////////////////////
+//Drive Tools
+////////////////////
 //real implementation tools for drive
 // Route to list Google Drive items from a specific folder (default: root)
 app.post("/tool/drive_list", async (req, res) => {
@@ -82,25 +85,28 @@ app.post("/tool/drive_list", async (req, res) => {
 
 //TODO add search routes and tool routes
 
-//mock drive folders until tool implemented (TODO)
-// app.post("/tool/list_drive", async (req, res) => {
-//   const { type } = req.body;
+////////////////////
+//SQL Tools
+////////////////////
 
-//   console.log("Received list_drive request with type:", type);
+app.post("/tool/sql_query", async (req, res) => {
+  const { query, params = [] } = req.body;
 
-//   const allItems = [
-//     { id: "1", name: "Project Docs", createdAt: "2024-03-01", type: "folder" },
-//     { id: "2", name: "Specs Sheet", createdAt: "2024-04-02", type: "file", mimeType: "application/vnd.google-docs" },
-//     { id: "3", name: "Q2 Report.pdf", createdAt: "2024-04-03", type: "file", mimeType: "application/pdf" },
-//     { id: "4", name: "Slides", createdAt: "2024-04-04", type: "file", mimeType: "application/vnd.google-slides" },
-//     { id: "5", name: "Photos", createdAt: "2024-04-05", type: "folder" },
-//   ];
+  try {
+    const response = await client.callTool({
+      name: "sqlQuery",
+      arguments: { query, params },
+    });
 
-//   const filtered =
-//     type === "all" ? allItems : allItems.filter((item) => item.type === type);
+    const textBlock = response.content.find(c => c.type === "text")?.text || "[]";
+    const rows = JSON.parse(textBlock); // Converts the stringified JSON result into real JS objects
 
-//   res.status(200).json({ items: filtered });
-// });
+    res.status(200).json({ rows });
+  } catch (error) {
+    console.error("Error calling sqlQuery tool:", error);
+    res.status(500).json({ error: "Failed to execute SQL query" });
+  }
+});
 
 
 //Start express on the defined port

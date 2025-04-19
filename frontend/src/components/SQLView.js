@@ -1,18 +1,16 @@
 // src/components/SQLView.js
 import React, { useEffect, useState } from "react";
-
-const mockSQLRows = [
-  { id: 1, name: "Alice", email: "alice@example.com" },
-  { id: 2, name: "Bob", email: "bob@example.com" },
-  { id: 3, name: "Charlie", email: "charlie@example.com" },
-];
+import { fetchSQLRows } from "../api/client";
 
 export default function SQLView() {
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
-    // 🛠 Replace with MCP SQL connector call
-    setRows(mockSQLRows);
+    fetchSQLRows().then((result) => {
+      if (result.success) {
+        setRows(result.data);
+      }
+    });
   }, []);
 
   const columnNames = rows.length > 0 ? Object.keys(rows[0]) : [];
