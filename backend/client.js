@@ -29,41 +29,65 @@ await client.connect(transport);
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
+app.post("/tool/drive_list", async (req, res) => {
+  const { folderId = "root", maxResults = 99 } = req.body;
 
-app.post("/tool/add", async (req, res) => {
-  const { a, b } = req.body;
   try {
     const response = await client.callTool({
-      name: "add",
-      arguments: {
-        a: a,
-        b: b,
-      },
+      name: "list",
+      arguments: { folderId, maxResults },
     });
-    res.status(200).json(response);
+
+    const items = response.content.map((item) => {
+      const match = item.text.match(/^(.+?) \((.+?)\) \[ID: (.+?)\]$/);
+      if (!match) return null;
+
+      return {
+        id: match[3],
+        name: match[1],
+        mimeType: match[2],
+        type: match[2].includes("folder") ? "folder" : "file",
+      };
+    }).filter(Boolean);
+
+    res.status(200).json({ items });
   } catch (error) {
-    res.status(500).json({ error: "Error calling tool" });
+    console.error("Error fetching drive items:", error);
+    res.status(500).json({ error: "Failed to fetch drive items" });
   }
 });
 
-//mock drive folders until tool implemented (TODO)
-app.post("/tool/list_drive", async (req, res) => {
-  const { type } = req.body;
+app.post("/tool/calendar_events", async (req, res) => {
+  const { calendarId = "primary", maxResults = 10 } = req.body;
 
-  console.log("Received list_drive request with type:", type);
+  try {
+    const response = await client.callTool({
+      name: "listEvents",
+      arguments: {
+        calendarId,
+        maxResults,
+      },
+    });
 
-  const allItems = [
-    { id: "1", name: "Project Docs", createdAt: "2024-03-01", type: "folder" },
-    { id: "2", name: "Specs Sheet", createdAt: "2024-04-02", type: "file", mimeType: "application/vnd.google-docs" },
-    { id: "3", name: "Q2 Report.pdf", createdAt: "2024-04-03", type: "file", mimeType: "application/pdf" },
-    { id: "4", name: "Slides", createdAt: "2024-04-04", type: "file", mimeType: "application/vnd.google-slides" },
-    { id: "5", name: "Photos", createdAt: "2024-04-05", type: "folder" },
-  ];
-
-  const filtered =
-    type === "all" ? allItems : allItems.filter((item) => item.type === type);
-
-  res.status(200).json({ items: filtered });
+    const events = response.content.map((item) => {
+      const match = item.text.match(/^(.*?) \((.*?) - (.*?)\) \[ID: (.*?)\]$/);
+      if (!match) return null;
+    
+      const [, title, start, end, id] = match;
+      return {
+        id,
+        title,
+        start,
+        end,
+      };
+    }).filter(Boolean); // remove nulls if any don't match
+    
+    res.status(200).json({ events });
+    
+  } catch (error) {
+    console.error("Error fetching calendar events:", error);
+    res.status(500).json({ error: "Failed to fetch calendar events" });
+  }
 });
 
 
