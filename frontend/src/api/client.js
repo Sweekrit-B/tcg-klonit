@@ -32,6 +32,27 @@ export async function fetchDriveItems(type = "all") {
   }
 }
 
+export async function fetchDriveSearch(query) {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/drive_search", { query });
+    return { success: true, data: response.data.items };
+  } catch (error) {
+    console.error("Error searching drive items:", error);
+    return { success: false, data: [] };
+  }
+}
+
+export async function fetchDriveRead(fileId) {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/drive_read", { fileId });
+    return { success: true, data: response.data.text };
+  } catch (error) {
+    console.error("Error reading drive file:", error);
+    return { success: false, data: "" };
+  }
+}
+
+
 export async function fetchCalendarEvents() {
   try {
     const response = await axios.post("http://localhost:5100/tool/calendar_events", {
