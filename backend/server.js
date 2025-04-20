@@ -10,6 +10,7 @@ import { google } from "googleapis"; // Google API clients
 import { authenticate } from "@google-cloud/local-auth"; // For local OAuth flow
 import fs from "fs/promises"; // Async file system access
 import path from "path"; // File path handling
+import dotenv from "dotenv";
 
 // === MCP Server Setup ===
 const server = new McpServer({ name: "Demo", version: "1.0.0" }); // Create MCP server instance
@@ -17,6 +18,9 @@ const server = new McpServer({ name: "Demo", version: "1.0.0" }); // Create MCP 
 // === PostgreSQL Setup ===
 const { Pool } = pg;
 let pool = null; // Will hold the PostgreSQL connection pool
+
+// Load environment variables from .env file if it exists
+dotenv.config();
 
 // Function to initialize DB connection and setup default data
 async function initializeDb(config = {}) {
