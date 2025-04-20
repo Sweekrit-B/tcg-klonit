@@ -74,7 +74,52 @@ app.post("/tool/drive_list", async (req, res) => {
 });
 
 
-//TODO add search routes and tool routes
+// Route to search for Drive items
+app.post("/tool/drive_search", async (req, res) => {
+  const { query, maxResults = 99 } = req.body;
+
+  try {
+    const response = await client.callTool({
+      name: "search",
+      arguments: { query, maxResults },
+    });
+
+    const items = response.content.map((item) => {
+      const match = item.text.match(/^(.+?) \((.+?)\) \[ID: (.+?)\]$/);
+      if (!match) return null;
+      return {
+        id: match[3],
+        name: match[1],
+        mimeType: match[2],
+        type: match[2].includes("folder") ? "folder" : "file",
+      };
+    }).filter(Boolean);
+
+    res.status(200).json({ items });
+  } catch (error) {
+    console.error("Error in /tool/drive_search:", error);
+    res.status(500).json({ error: "Failed to search Drive items" });
+  }
+});
+
+// Route to read a file's content
+app.post("/tool/drive_read", async (req, res) => {
+  const { fileId } = req.body;
+
+  try {
+    const response = await client.callTool({
+      name: "read",
+      arguments: { fileId },
+    });
+
+    const text = response.content.find(item => item.type === "text")?.text || "";
+    res.status(200).json({ text });
+  } catch (error) {
+    console.error("Error in /tool/drive_read:", error);
+    res.status(500).json({ error: "Failed to read Drive file" });
+  }
+});
+
 
 ////////////////////
 //SQL Tools

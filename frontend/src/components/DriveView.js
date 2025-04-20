@@ -1,13 +1,15 @@
 // src/components/DriveView.js
 import React, { useEffect, useState } from "react";
 import DriveTable from "./DriveTable";
-import { fetchDriveItems } from "../api/client"; // Assumes you have this set up
+import { fetchDriveItems, fetchDriveFile } from "../api/client"; // Now also importing fetchDriveFile
 
 export default function DriveView() {
   const [driveItems, setDriveItems] = useState([]);
-  const [filter, setFilter] = useState("all"); // "file", "folder", "all"
+  const [filter, setFilter] = useState("all"); // User-selected filter type: all/files/folders
+  const [selectedContent, setSelectedContent] = useState(""); // Used to store text content of selected file
+  const [loading, setLoading] = useState(false); // Used to show loading while reading a file
 
-
+  // Load items on initial render or filter change
   useEffect(() => {
     fetchDriveItems(filter).then((result) => {
       if (result.success) {
@@ -17,13 +19,24 @@ export default function DriveView() {
       }
     });
   }, [filter]);
-  
-  
+
+  // Handle file read action
+  const handleRead = async (fileId) => {
+    setLoading(true);
+    const result = await fetchDriveFile(fileId);
+    if (result.success) {
+      setSelectedContent(result.data);
+    } else {
+      setSelectedContent("Failed to read file.");
+    }
+    setLoading(false);
+  };
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>Drive</h2>
+      <h2 style={styles.heading}>Google Drive Viewer</h2>
 
+      {/* Filter control dropdown */}
       <div style={styles.controls}>
         <label htmlFor="filter">View:</label>
         <select
@@ -38,7 +51,20 @@ export default function DriveView() {
         </select>
       </div>
 
-      <DriveTable items={driveItems} />
+      {/* DriveTable component displays name/type and triggers read */}
+      <DriveTable items={driveItems} onReadFile={handleRead} />
+
+      {/* Section to display selected file contents */}
+      {loading ? (
+        <p>Loading file content...</p>
+      ) : (
+        selectedContent && (
+          <div style={styles.fileContent}>
+            <h3>File Content</h3>
+            <pre>{selectedContent}</pre>
+          </div>
+        )
+      )}
     </div>
   );
 }
@@ -64,5 +90,13 @@ const styles = {
   select: {
     padding: "0.4rem 0.6rem",
     fontSize: "0.95rem",
+  },
+  fileContent: {
+    marginTop: "2rem",
+    backgroundColor: "#fff",
+    padding: "1rem",
+    borderRadius: "8px",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+    whiteSpace: "pre-wrap",
   },
 };
