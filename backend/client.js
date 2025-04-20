@@ -30,6 +30,13 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+//TEMPORARY CODE FOR TESTING TODO; REMOVE AFTER TESTING
+app.get("/tool/list_all", (req, res) => {
+  const tools = client.listTools();
+  res.json({ tools });
+});
+
+
 ////////////////////
 //Drive Tools
 ////////////////////
