@@ -562,7 +562,81 @@ server.tool(
 );
 
 // === SQL Tools ===
-// (sqlQuery, listTables, tableSchema) to be implemented
+
+server.tool(
+  "sqlQuery",
+  {
+    query: z.string().min(1).describe("SQL SELECT query"),
+    params: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  },
+  async ({ query, params = [] }) => {
+    try {
+      if (!pool) await initializeDb();
+      const firstWord = query.trim().split(/\s+/)[0].toLowerCase();
+      if (!["select", "with"].includes(firstWord)) throw new Error("Only SELECT queries allowed");
+
+      const result = await pool.query(query, params);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result.rows, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: "text", text: `Error executing SQL query: ${error.message}` }],
+      };
+    }
+  }
+);
+
+server.tool("listTables", {}, async () => {
+  try {
+    if (!pool) await initializeDb();
+    const result = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' ORDER BY table_name
+    `);
+
+    const names = result.rows.map((r) => r.table_name);
+    return {
+      content: [{ type: "text", text: names.length ? names.join("\n") : "No tables found." }],
+    };
+  } catch (error) {
+    return {
+      content: [{ type: "text", text: `Error listing tables: ${error.message}` }],
+    };
+  }
+});
+
+server.tool(
+  "tableSchema",
+  { tableName: z.string().min(1) },
+  async ({ tableName }) => {
+    try {
+      if (!pool) await initializeDb();
+      const result = await pool.query(`
+        SELECT column_name, data_type, character_maximum_length,
+               column_default, is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1
+        ORDER BY ordinal_position
+      `, [tableName]);
+
+      if (result.rows.length === 0) {
+        return {
+          content: [{ type: "text", text: `Table '${tableName}' not found.` }],
+        };
+      }
+
+      return {
+        content: [{ type: "text", text: JSON.stringify(result.rows, null, 2) }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: "text", text: `Error retrieving schema: ${error.message}` }],
+      };
+    }
+  }
+);
+
 
 // === Transport + Init ===
 const transport = new StdioServerTransport(); // Create transport for communication with MCP client
