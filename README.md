@@ -1,14 +1,4 @@
-# Backend
-
-Contains server and client setup for MCP, as well as package.json/package-lock.json.
-
-# Frontend
-
-Contains base frontend setup meant offering base functionality after connecting to MCP.
-
-# MCP SQL Integration
-
-This project provides a Model Context Protocol (MCP) server that integrates with a PostgreSQL database, allowing you to query and inspect database tables through the MCP protocol.
+# Backend for SQL Connector
 
 ## Prerequisites
 
@@ -16,218 +6,102 @@ This project provides a Model Context Protocol (MCP) server that integrates with
 - PostgreSQL (v12 or higher)
 - npm or yarn
 
-## Installation
+## Setup
 
-1. Clone this repository:
-
-   ```
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-
-2. Install dependencies:
+1. Install dependencies:
 
    ```
    npm install
    ```
 
-3. Configure the database connection:
-   - The `.env` file in the backend directory contains the database configuration
-   - Edit the `.env` file with your PostgreSQL connection details:
+2. Set up your environment variables:
+
+   - Copy the `.env.example` file to `.env`:
      ```
-     PGHOST=your-database-host
-     PGPORT=5432
-     PGUSER=your-username
-     PGPASSWORD=your-secure-password
-     PGDATABASE=your-database-name
+     cp .env.example .env
      ```
+   - Edit the `.env` file with your database credentials and API keys.
 
-## Database Setup
+3. Set up PostgreSQL:
 
-Before running the server, you need to set up the database:
+   - Make sure PostgreSQL is installed and running
+   - Create a database user with the credentials specified in your `.env` file
+   - Create the database specified in your `.env` file
 
-1. Make sure PostgreSQL is running on your machine
-2. Run the setup script:
+4. Start the server:
+
    ```
-   cd backend
-   npm run setup
+   npm start
    ```
 
-This script will:
+   The server will automatically create the necessary tables and insert sample data if they don't already exist.
 
-- Create the database if it doesn't exist
-- Create the necessary tables (users and products)
-- Insert sample data
-
-### PostgreSQL Installation and Configuration
+## PostgreSQL Setup
 
 If you're new to PostgreSQL, here's how to get started:
 
-#### Installing PostgreSQL
+### Installing PostgreSQL
 
 1. **Download PostgreSQL** from the [official website](https://www.postgresql.org/download/)
 2. **Run the installer** and follow the prompts
 3. **During installation**:
-   - You'll be asked to set a password for the `postgres` superuser
+   - You'll be asked to set a password for the superuser
    - Remember this password - you'll need it to connect to the database
    - Keep the default port (5432)
 
-#### Using the Default Configuration
+### Creating the Database User
 
-The application includes default database configuration values:
+1. Connect to PostgreSQL as the superuser:
 
-To use these default values, you need to:
+   ```
+   psql -U postgres
+   ```
 
-1. **Create the `mcp_user` in PostgreSQL**:
+   (On macOS with Homebrew, you might need to use your system username instead of "postgres")
 
-   - Open a terminal/command prompt
-   - Connect to PostgreSQL as the superuser:
-     ```
-     psql -U postgres
-     ```
-   - When prompted, enter the password you set during installation
-   - Create the user and grant privileges:
-     ```sql
-     CREATE USER mcp_user WITH PASSWORD 'mcp_password';
-     ALTER USER mcp_user WITH SUPERUSER;
-     ```
-   - Exit psql by typing `\q` and pressing Enter
+2. Create the user and grant privileges:
 
-2. **Edit the `.env` file** to use these default values (or keep them as they are)
+   ```sql
+   CREATE USER mcp_user WITH PASSWORD 'mcp_password';
+   ALTER USER mcp_user WITH SUPERUSER;
+   ```
 
-## Running the Server
+3. Create the database:
 
-Start the MCP server:
+   ```sql
+   CREATE DATABASE mcp_demo;
+   ```
 
-```
-cd backend
-npm start
-```
+4. Grant privileges to the user:
 
-## Using the MCP Inspector
+   ```sql
+   GRANT ALL PRIVILEGES ON DATABASE mcp_demo TO mcp_user;
+   ```
 
-The [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) is a powerful developer tool for testing and debugging MCP servers. It provides a visual interface to interact with your MCP server and test its tools and resources.
+5. Connect to the database and grant schema privileges:
+   ```sql
+   \c mcp_demo
+   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO mcp_user;
+   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO mcp_user;
+   ```
 
-### Installing the MCP Inspector
+## Environment Variables
 
-You can run the MCP Inspector directly using npx without installation:
+The following environment variables are used in the application:
 
-```bash
-npx @modelcontextprotocol/inspector <command>
-```
-
-### Inspecting Your SQL MCP Server
-
-To inspect your SQL MCP server:
-
-```bash
-cd backend
-npx @modelcontextprotocol/inspector node server.js
-```
-
-This will:
-
-1. Start the MCP Inspector client UI (default port 6274)
-2. Start the MCP Proxy server (default port 6277)
-3. Launch your SQL MCP server
-
-Open the MCP Inspector client UI in your browser to interact with your server.
-
-### Features of the MCP Inspector
-
-The MCP Inspector provides several features for testing your SQL MCP integration:
-
-- **Tools Tab**: Test your SQL tools (`sqlQuery`, `listTables`, `tableSchema`) with custom inputs
-- **Resources Tab**: Inspect available resources
-- **Notifications Pane**: View server logs and notifications
-- **Server Connection Pane**: Configure connection settings
-
-### Example: Testing SQL Queries
-
-Using the MCP Inspector, you can easily test SQL queries:
-
-1. Open the MCP Inspector in your browser
-2. Navigate to the "Tools" tab
-3. Select the "sqlQuery" tool
-4. Enter a query like `SELECT * FROM users`
-5. Click "Execute" to see the results
-
-### Customizing the Inspector
-
-You can customize the MCP Inspector with environment variables:
-
-```bash
-CLIENT_PORT=8080 SERVER_PORT=9000 npx @modelcontextprotocol/inspector node server.js
-```
-
-For more details on using the MCP Inspector, see the [official documentation](https://modelcontextprotocol.io/docs/tools/inspector) or the [GitHub repository](https://github.com/modelcontextprotocol/inspector).
-
-## Available MCP Tools
-
-The server provides the following MCP tools:
-
-1. **sqlQuery**: Execute SQL SELECT queries
-
-   - Parameters:
-     - `query`: SQL SELECT query with placeholders
-     - `params`: Array of parameters to substitute in the query (optional)
-
-2. **listTables**: List all tables in the database
-
-   - No parameters required
-
-3. **tableSchema**: Get the schema of a specific table
-   - Parameters:
-     - `tableName`: Name of the table to describe
-
-## Example Usage
-
-### Using the sqlQuery Tool
-
-```javascript
-// Example query to get all users
-const result = await mcpClient.tool("sqlQuery", {
-  query: "SELECT * FROM users",
-  params: [],
-});
-
-// Example parameterized query
-const result = await mcpClient.tool("sqlQuery", {
-  query: "SELECT * FROM products WHERE price > $1",
-  params: [500],
-});
-```
-
-### Using the listTables Tool
-
-```javascript
-const result = await mcpClient.tool("listTables", {});
-```
-
-### Using the tableSchema Tool
-
-```javascript
-const result = await mcpClient.tool("tableSchema", {
-  tableName: "users",
-});
-```
-
-## Security Notes
-
-- The server only allows SELECT queries for security reasons
-- All queries are parameterized to prevent SQL injection
-- Consider using a dedicated database user with limited permissions
-- The `.env` file contains sensitive information and is excluded from version control
+- `PGHOST`: PostgreSQL host (default: localhost)
+- `PGPORT`: PostgreSQL port (default: 5432)
+- `PGUSER`: PostgreSQL username
+- `PGPASSWORD`: PostgreSQL password
+- `PGDATABASE`: PostgreSQL database name
+- `OPENAI_API_KEY`: OpenAI API key (if using OpenAI services)
+- `LANGSMITH_API_KEY`: LangSmith API key (if using LangSmith services)
 
 ## Troubleshooting
 
-If you encounter issues:
+If you encounter connection issues:
 
-1. Check that PostgreSQL is running
-2. Verify your database connection settings in the `.env` file
-3. Ensure the database user has the necessary permissions
-4. Check the server logs for error messages
-
-## License
-
-[Your License]
+1. Make sure PostgreSQL is running
+2. Verify your database credentials in the `.env` file
+3. Check that the database user has the necessary permissions
+4. Try connecting to the database manually using `psql` to verify your credentials
