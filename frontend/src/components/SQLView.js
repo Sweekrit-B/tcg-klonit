@@ -1,45 +1,121 @@
 // src/components/SQLView.js
 import React, { useEffect, useState } from "react";
-import { fetchSQLRows } from "../api/client";
+import {
+  fetchSQLTableList,
+  fetchSQLTableSchema,
+  runSQLQuery,
+} from "../api/client";
 
 export default function SQLView() {
+  const [tables, setTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState("");
+  const [schema, setSchema] = useState([]);
+  const [query, setQuery] = useState("SELECT * FROM users;");
   const [rows, setRows] = useState([]);
 
   useEffect(() => {
-    fetchSQLRows().then((result) => {
+    fetchSQLTableList().then((result) => {
       if (result.success) {
-        setRows(result.data);
+        setTables(result.data);
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (selectedTable) {
+      fetchSQLTableSchema(selectedTable).then((result) => {
+        if (result.success) {
+          setSchema(result.data);
+        }
+      });
+    }
+  }, [selectedTable]);
+
+  const handleRunQuery = async () => {
+    const result = await runSQLQuery(query);
+    if (result.success) {
+      setRows(result.data);
+    } else {
+      setRows([]);
+    }
+  };
 
   const columnNames = rows.length > 0 ? Object.keys(rows[0]) : [];
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>SQL Query Results</h2>
-      {rows.length === 0 ? (
-        <p style={styles.empty}>No data returned.</p>
-      ) : (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              {columnNames.map((col) => (
-                <th key={col} style={styles.th}>{col}</th>
+      <h2 style={styles.heading}>SQL Interface</h2>
+
+      <div style={styles.schemaBox}>
+        <label style={styles.label}>Select a Table:</label>
+        <select
+          value={selectedTable}
+          onChange={(e) => {
+            setSelectedTable(e.target.value);
+            setQuery(`SELECT * FROM ${e.target.value};`);
+          }}
+        >
+          <option value="">-- Choose Table --</option>
+          {tables.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+
+        {schema.length > 0 && (
+          <div style={styles.schemaDisplay}>
+            <h4>Schema for '{selectedTable}':</h4>
+            <ul>
+              {schema.map((col, idx) => (
+                <li key={idx}>
+                  <strong>{col.column_name}</strong> ({col.data_type})
+                </li>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, idx) => (
-              <tr key={idx}>
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <textarea
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        style={styles.textarea}
+        rows={4}
+      />
+      <button style={styles.button} onClick={handleRunQuery}>
+        Run Query
+      </button>
+
+      <div style={{ marginTop: "2rem" }}>
+        <h3>Query Results</h3>
+        {rows.length === 0 ? (
+          <p style={styles.empty}>No data returned.</p>
+        ) : (
+          <table style={styles.table}>
+            <thead>
+              <tr>
                 {columnNames.map((col) => (
-                  <td key={col} style={styles.td}>{row[col]}</td>
+                  <th key={col} style={styles.th}>
+                    {col}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => (
+                <tr key={idx}>
+                  {columnNames.map((col) => (
+                    <td key={col} style={styles.td}>
+                      {row[col]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
@@ -48,20 +124,55 @@ const styles = {
   container: {
     padding: "2rem",
     backgroundColor: "#f5f5f5",
-    minHeight: "100vh",
     fontFamily: "Arial, sans-serif",
+    minHeight: "100vh",
   },
   heading: {
     fontSize: "1.6rem",
     marginBottom: "1rem",
     color: "#333",
   },
+  label: {
+    fontWeight: "bold",
+    marginRight: "0.5rem",
+  },
+  schemaBox: {
+    marginBottom: "1rem",
+  },
+  select: {
+    padding: "0.4rem",
+    fontSize: "1rem",
+  },
+  schemaDisplay: {
+    marginTop: "1rem",
+    backgroundColor: "#fff",
+    padding: "1rem",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+  },
+  textarea: {
+    width: "100%",
+    padding: "0.75rem",
+    fontSize: "1rem",
+    marginTop: "1rem",
+    height: "1rem",
+    borderRadius: "6px",
+  },
+  button: {
+    marginTop: "0.75rem",
+    padding: "0.5rem 1rem",
+    fontSize: "1rem",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+  },
   table: {
     width: "100%",
     borderCollapse: "collapse",
     backgroundColor: "#fff",
     borderRadius: "8px",
-    overflow: "hidden",
     boxShadow: "0 0 5px rgba(0,0,0,0.1)",
   },
   th: {
