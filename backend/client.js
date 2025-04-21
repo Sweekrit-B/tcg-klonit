@@ -148,39 +148,49 @@ app.post("/tool/sql_query", async (req, res) => {
 //Calendar Tools
 //////////////
 
-app.post("/tool/calendar_events", async (req, res) => {
-  const { calendarId = "60d060abc272435ca823a4c35ee3d37fba57e24e27ff8cdc5f1d2cb48185c797@group.calendar.google.com", maxResults = 10 } = req.body;
+// List all calendars
+app.post("/tool/calendar_list", async (req, res) => {
+  try {
+    const response = await client.callTool({ name: "listCalendars", arguments: {} });
+
+    const calendars = response.content.map((item) => {
+      const match = item.text.match(/^(.*?) \[ID: (.*?)\]$/);
+      if (!match) return null;
+      const [, name, id] = match;
+      return { name, id };
+    }).filter(Boolean);
+
+    res.status(200).json({ calendars });
+  } catch (error) {
+    console.error("Error in /tool/calendar_list:", error);
+    res.status(500).json({ error: "Failed to list calendars" });
+  }
+});
+
+// List events from a calendar
+app.post("/tool/calendar_list_events", async (req, res) => {
+  const { calendarId = "primary", maxResults = 10 } = req.body;
 
   try {
     const response = await client.callTool({
       name: "listEvents",
-      arguments: {
-        calendarId,
-        maxResults,
-      },
+      arguments: { calendarId, maxResults },
     });
 
     const events = response.content.map((item) => {
       const match = item.text.match(/^(.*?) \((.*?) - (.*?)\) \[ID: (.*?)\]$/);
       if (!match) return null;
-    
-      const [, title, start, end, id] = match;
-      return {
-        id,
-        title,
-        start,
-        end,
-      };
-    }).filter(Boolean); // remove nulls if any don't match
-    
+      const [, summary, start, end, id] = match;
+      return { title: summary, start, end, id };
+    }).filter(Boolean);
+
     res.status(200).json({ events });
-    
   } catch (error) {
-    console.error("Error fetching calendar events:", error);
-    res.status(500).json({ error: "Failed to fetch calendar events" });
+    console.error("Error in /tool/calendar_list_events:", error);
+    res.status(500).json({ error: "Failed to list events" });
   }
-  
 });
+
 
 //Start express on the defined port
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));

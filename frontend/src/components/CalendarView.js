@@ -1,72 +1,91 @@
-// src/components/CalendarView.js
-import React, { useEffect, useState } from "react";
-import { fetchCalendarEvents } from "../api/client";
+import React, { useState } from "react";
+import {
+  fetchCalendars,
+  fetchCalendarEvents
+} from "../api/client";
 
 export default function CalendarView() {
+  const [calendars, setCalendars] = useState([]);
+  const [selectedCalendar, setSelectedCalendar] = useState("");
   const [events, setEvents] = useState([]);
 
-  useEffect(() => {
-    fetchCalendarEvents().then((result) => {
-      if (result.success) {
-        setEvents(result.data);
-      }
-    });
-  }, []);
+  const handleFetchCalendars = async () => {
+    const result = await fetchCalendars();
+    if (result.success) {
+      setCalendars(result.data);
+    }
+  };
+
+  const handleFetchEvents = async () => {
+    if (!selectedCalendar) return;
+
+    const result = await fetchCalendarEvents(selectedCalendar);
+    if (result.success) {
+      setEvents(result.data);
+    }
+  };
 
   return (
     <div style={styles.container}>
-      <h2 style={styles.heading}>Upcoming Calendar Events</h2>
-      <ul style={styles.list}>
-        {events.map((event) => (
-          <li key={event.id} style={styles.event}>
-            <strong>{event.title}</strong>
-            <p style={styles.time}>
-              {formatDate(event.start)} – {formatDate(event.end)}
-            </p>
-          </li>
-        ))}
-      </ul>
+      <h2 style={styles.heading}>Google Calendar</h2>
+
+      <button style={styles.button} onClick={handleFetchCalendars}>
+        List Calendars
+      </button>
+
+      {calendars.length > 0 && (
+        <div style={styles.dropdownContainer}>
+          <label>Select Calendar:</label>
+          <select
+            value={selectedCalendar}
+            onChange={(e) => setSelectedCalendar(e.target.value)}
+            style={styles.select}
+          >
+            <option value="">-- Choose Calendar --</option>
+            {calendars.map((cal) => (
+              <option key={cal.id} value={cal.id}>
+                {cal.name}
+              </option>
+            ))}
+          </select>
+          <button style={styles.button} onClick={handleFetchEvents}>
+            List Events
+          </button>
+        </div>
+      )}
+
+      {events.length > 0 && (
+        <div style={styles.events}>
+          <h3>Events</h3>
+          <ul>
+            {events.map((event) => (
+              <li key={event.id}>
+                <strong>{event.title}</strong>: {event.start} – {event.end}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
-function formatDate(datetime) {
-  const options = {
-    hour: "2-digit",
-    minute: "2-digit",
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  };
-  return new Date(datetime).toLocaleString(undefined, options);
-}
-
 const styles = {
-  container: {
-    padding: "2rem",
-    backgroundColor: "#f5f5f5",
-    minHeight: "100vh",
-    fontFamily: "Arial, sans-serif",
+  container: { padding: "2rem", fontFamily: "Arial, sans-serif" },
+  heading: { fontSize: "1.6rem", marginBottom: "1rem" },
+  button: {
+    padding: "0.5rem 1rem",
+    margin: "0.5rem",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
   },
-  heading: {
-    fontSize: "1.6rem",
-    marginBottom: "1.5rem",
-    color: "#333",
+  dropdownContainer: { marginTop: "1rem", display: "flex", alignItems: "center", gap: "1rem" },
+  select: {
+    padding: "0.4rem",
+    fontSize: "1rem",
   },
-  list: {
-    listStyle: "none",
-    padding: 0,
-  },
-  event: {
-    padding: "1rem",
-    backgroundColor: "#fff",
-    borderRadius: "8px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    marginBottom: "1rem",
-  },
-  time: {
-    color: "#555",
-    marginTop: "0.3rem",
-    fontSize: "0.9rem",
-  },
+  events: { marginTop: "2rem" },
 };
