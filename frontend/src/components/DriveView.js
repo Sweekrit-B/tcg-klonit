@@ -7,14 +7,15 @@ import {
   fetchDriveSearch,
 } from "../api/client";
 
+// DriveView allows users to browse, search, and read files from Google Drive using MCP tools
 export default function DriveView() {
   const [driveItems, setDriveItems] = useState([]);
-  const [filter, setFilter] = useState("all"); // file, folder, all
-  const [searchQuery, setSearchQuery] = useState(""); // user search input
-  const [selectedContent, setSelectedContent] = useState(""); // file content
-  const [loading, setLoading] = useState(false); // loading flag
+  const [filter, setFilter] = useState("all"); // Filter to show all items, files, or folders
+  const [searchQuery, setSearchQuery] = useState(""); // Text for searching by name
+  const [selectedContent, setSelectedContent] = useState(""); // Text content of selected file
+  const [loading, setLoading] = useState(false); // Loading flag for file read
 
-  // Load drive items when filter changes (initial load also)
+  // Fetch drive items whenever the filter changes
   useEffect(() => {
     fetchDriveItems(filter).then((result) => {
       if (result.success) {
@@ -25,7 +26,7 @@ export default function DriveView() {
     });
   }, [filter]);
 
-  // Handle search action
+  // Run search when user clicks "Search" button
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
@@ -37,7 +38,7 @@ export default function DriveView() {
     }
   };
 
-  // Handle file reading
+  // Read the contents of a file and store it for display
   const handleRead = async (fileId) => {
     setLoading(true);
     const result = await fetchDriveRead(fileId);
@@ -53,7 +54,7 @@ export default function DriveView() {
     <div style={styles.container}>
       <h2 style={styles.heading}>Google Drive Viewer</h2>
 
-      {/* Filter & Search Controls */}
+      {/* Filter + search bar UI */}
       <div style={styles.controls}>
         <label htmlFor="filter">Filter:</label>
         <select
@@ -79,10 +80,10 @@ export default function DriveView() {
         </button>
       </div>
 
-      {/* Drive table listing */}
+      {/* Table of Drive files and folders */}
       <DriveTable items={driveItems} onReadFile={handleRead} />
 
-      {/* File content preview */}
+      {/* Display file content after clicking Read */}
       {loading ? (
         <p>Loading file content...</p>
       ) : (
@@ -96,6 +97,7 @@ export default function DriveView() {
     </div>
   );
 }
+
 
 const styles = {
   container: {

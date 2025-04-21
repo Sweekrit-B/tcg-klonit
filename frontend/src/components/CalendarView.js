@@ -1,4 +1,7 @@
 // src/components/CalendarView.js
+// This component provides a user interface for interacting with Google Calendar.
+// Users can list calendars, select a calendar, view its events, and expand each event to see full details.
+
 import React, { useState } from "react";
 import {
   fetchCalendars,
@@ -7,13 +10,14 @@ import {
 } from "../api/client";
 
 export default function CalendarView() {
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendar, setSelectedCalendar] = useState("");
-  const [events, setEvents] = useState([]);
-  const [expandedEventId, setExpandedEventId] = useState(null);
-  const [eventDetails, setEventDetails] = useState({}); // eventId -> string detail
+  // Local state variables
+  const [calendars, setCalendars] = useState([]);              // List of available calendars
+  const [selectedCalendar, setSelectedCalendar] = useState(""); // Currently selected calendar ID
+  const [events, setEvents] = useState([]);                    // Events for the selected calendar
+  const [expandedEventId, setExpandedEventId] = useState(null); // ID of the currently expanded event
+  const [eventDetails, setEventDetails] = useState({});        // Mapping of eventId -> full event details
 
-  // Fetch calendars
+  // Fetch the list of calendars from the backend
   const handleFetchCalendars = async () => {
     const result = await fetchCalendars();
     if (result.success) {
@@ -21,21 +25,21 @@ export default function CalendarView() {
     }
   };
 
-  // Fetch events
+  // Fetch the list of events for the currently selected calendar
   const handleFetchEvents = async () => {
     if (!selectedCalendar) return;
     const result = await fetchCalendarEvents(selectedCalendar);
     if (result.success) {
       setEvents(result.data);
-      setExpandedEventId(null);
-      setEventDetails({});
+      setExpandedEventId(null);     // Collapse all open event cards
+      setEventDetails({});          // Clear previous details
     }
   };
 
-  // Toggle event details
+  // Toggle expand/collapse for a specific event and fetch its details if not already loaded
   const handleToggleEvent = async (eventId) => {
     if (expandedEventId === eventId) {
-      setExpandedEventId(null);
+      setExpandedEventId(null); // Collapse if already open
     } else {
       if (!eventDetails[eventId]) {
         const result = await fetchCalendarEventDetails(selectedCalendar, eventId);
@@ -45,7 +49,7 @@ export default function CalendarView() {
           setEventDetails((prev) => ({ ...prev, [eventId]: "Failed to load details" }));
         }
       }
-      setExpandedEventId(eventId);
+      setExpandedEventId(eventId); // Expand selected event
     }
   };
 
@@ -53,10 +57,12 @@ export default function CalendarView() {
     <div style={styles.container}>
       <h2 style={styles.heading}>Google Calendar</h2>
 
+      {/* Button to fetch and list all available calendars */}
       <button style={styles.button} onClick={handleFetchCalendars}>
         List Calendars
       </button>
 
+      {/* Calendar selector UI */}
       {calendars.length > 0 && (
         <div style={styles.dropdownContainer}>
           <label style={styles.label}>Select Calendar:</label>
@@ -78,6 +84,7 @@ export default function CalendarView() {
         </div>
       )}
 
+      {/* Render events as cards with optional detail toggling */}
       {events.length > 0 && (
         <div style={styles.eventList}>
           <h3>Events</h3>
@@ -95,6 +102,7 @@ export default function CalendarView() {
                   {expandedEventId === event.id ? "▲ Hide Details" : "▼ Show Details"}
                 </div>
               </div>
+              {/* Conditionally render event details block if expanded */}
               {expandedEventId === event.id && (
                 <div style={styles.cardDetails}>
                   <pre style={styles.detailsPre}>
@@ -110,6 +118,7 @@ export default function CalendarView() {
   );
 }
 
+// === Inline Styles for the CalendarView component ===
 const styles = {
   container: { padding: "2rem", fontFamily: "Arial, sans-serif" },
   heading: { fontSize: "1.6rem", marginBottom: "1rem" },
