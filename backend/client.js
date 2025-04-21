@@ -144,6 +144,49 @@ app.post("/tool/sql_query", async (req, res) => {
   }
 });
 
+// List all tables in the database
+app.post("/tool/sql_list_tables", async (req, res) => {
+  try {
+    const response = await client.callTool({
+      name: "listTables",
+      arguments: {},
+    });
+
+    const text = response.content.find((c) => c.type === "text")?.text || "";
+    const tableNames = text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    res.status(200).json({ tables: tableNames });
+  } catch (error) {
+    console.error("Error in /tool/sql_list_tables:", error);
+    res.status(500).json({ error: "Failed to list tables" });
+  }
+});
+
+
+// Get schema for a selected table
+app.post("/tool/sql_table_schema", async (req, res) => {
+  const { tableName } = req.body;
+
+  try {
+    const response = await client.callTool({
+      name: "tableSchema",
+      arguments: { tableName },
+    });
+
+    const text = response.content.find(c => c.type === "text")?.text || "[]";
+    const schema = JSON.parse(text);
+
+    res.status(200).json({ schema });
+  } catch (error) {
+    console.error("Error calling tableSchema:", error);
+    res.status(500).json({ error: "Failed to fetch table schema" });
+  }
+});
+
+
 //////////////
 //Calendar Tools
 //////////////
@@ -207,6 +250,7 @@ app.post("/tool/calendar_get_event", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch event details" });
   }
 });
+
 
 
 
