@@ -68,12 +68,32 @@ export async function fetchCalendarEvents(calendarId = "primary") {
       calendarId,
       maxResults: 10,
     });
+
     return { success: true, data: response.data.events };
   } catch (error) {
     console.error("Error fetching calendar events:", error);
     return { success: false, data: [] };
   }
 }
+
+
+export async function fetchCalendarEventDetails(calendarId, eventId) {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/calendar_get_event", {
+      calendarId,
+      eventId,
+    });
+
+    return {
+      success: true,
+      data: response.data.details, // assuming backend sends { details: "..." }
+    };
+  } catch (error) {
+    console.error("Error fetching calendar event details:", error);
+    return { success: false, data: "" };
+  }
+}
+
 
 ///////////
 // SQL Tools

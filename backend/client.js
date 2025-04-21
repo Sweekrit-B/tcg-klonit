@@ -191,6 +191,24 @@ app.post("/tool/calendar_list_events", async (req, res) => {
   }
 });
 
+app.post("/tool/calendar_get_event", async (req, res) => {
+  const { calendarId, eventId } = req.body;
+
+  try {
+    const response = await client.callTool({
+      name: "getEvent",
+      arguments: { calendarId, eventId },
+    });
+
+    const text = response.content.find(item => item.type === "text")?.text || "";
+    res.status(200).json({ details: text });
+  } catch (error) {
+    console.error("Error in /tool/calendar_get_event:", error);
+    res.status(500).json({ error: "Failed to fetch event details" });
+  }
+});
+
+
 
 //Start express on the defined port
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
