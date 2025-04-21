@@ -1,15 +1,20 @@
 // src/components/DriveView.js
 import React, { useEffect, useState } from "react";
 import DriveTable from "./DriveTable";
-import { fetchDriveItems, fetchDriveRead } from "../api/client";
+import {
+  fetchDriveItems,
+  fetchDriveRead,
+  fetchDriveSearch,
+} from "../api/client";
 
 export default function DriveView() {
   const [driveItems, setDriveItems] = useState([]);
-  const [filter, setFilter] = useState("all"); // User-selected filter type: all/files/folders
-  const [selectedContent, setSelectedContent] = useState(""); // Used to store text content of selected file
-  const [loading, setLoading] = useState(false); // Used to show loading while reading a file
+  const [filter, setFilter] = useState("all"); // file, folder, all
+  const [searchQuery, setSearchQuery] = useState(""); // user search input
+  const [selectedContent, setSelectedContent] = useState(""); // file content
+  const [loading, setLoading] = useState(false); // loading flag
 
-  // Load items on initial render or filter change
+  // Load drive items when filter changes (initial load also)
   useEffect(() => {
     fetchDriveItems(filter).then((result) => {
       if (result.success) {
@@ -20,7 +25,19 @@ export default function DriveView() {
     });
   }, [filter]);
 
-  // Handle file read action
+  // Handle search action
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    const result = await fetchDriveSearch(searchQuery);
+    if (result.success) {
+      setDriveItems(result.data);
+    } else {
+      console.error("Search failed");
+    }
+  };
+
+  // Handle file reading
   const handleRead = async (fileId) => {
     setLoading(true);
     const result = await fetchDriveRead(fileId);
@@ -36,9 +53,9 @@ export default function DriveView() {
     <div style={styles.container}>
       <h2 style={styles.heading}>Google Drive Viewer</h2>
 
-      {/* Filter control dropdown */}
+      {/* Filter & Search Controls */}
       <div style={styles.controls}>
-        <label htmlFor="filter">View:</label>
+        <label htmlFor="filter">Filter:</label>
         <select
           id="filter"
           value={filter}
@@ -49,12 +66,23 @@ export default function DriveView() {
           <option value="folder">Folders</option>
           <option value="file">Files</option>
         </select>
+
+        <input
+          type="text"
+          placeholder="Search Drive..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={styles.input}
+        />
+        <button onClick={handleSearch} style={styles.button}>
+          Search
+        </button>
       </div>
 
-      {/* DriveTable component displays name/type and triggers read */}
+      {/* Drive table listing */}
       <DriveTable items={driveItems} onReadFile={handleRead} />
 
-      {/* Section to display selected file contents */}
+      {/* File content preview */}
       {loading ? (
         <p>Loading file content...</p>
       ) : (
@@ -86,10 +114,25 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "0.5rem",
+    flexWrap: "wrap",
   },
   select: {
     padding: "0.4rem 0.6rem",
     fontSize: "0.95rem",
+  },
+  input: {
+    padding: "0.4rem 0.6rem",
+    fontSize: "0.95rem",
+    flexGrow: 1,
+  },
+  button: {
+    padding: "0.4rem 0.8rem",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
   },
   fileContent: {
     marginTop: "2rem",
