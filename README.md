@@ -607,3 +607,4 @@ To use this MCP connector with Claude Desktop or other AI tools:
    - Verify API is enabled
    - Ensure OAuth consent screen is configured correctly
    - Make sure you have the right permissions
+
