@@ -52,11 +52,20 @@ export async function fetchDriveRead(fileId) {
   }
 }
 
-
-export async function fetchCalendarEvents() {
+export async function fetchCalendars() {
   try {
-    const response = await axios.post("http://localhost:5100/tool/calendar_events", {
-      calendarId: "60d060abc272435ca823a4c35ee3d37fba57e24e27ff8cdc5f1d2cb48185c797@group.calendar.google.com",
+    const response = await axios.post("http://localhost:5100/tool/calendar_list");
+    return { success: true, data: response.data.calendars };
+  } catch (error) {
+    console.error("Error fetching calendar list:", error);
+    return { success: false, data: [] };
+  }
+}
+
+export async function fetchCalendarEvents(calendarId = "primary") {
+  try {
+    const response = await axios.post("http://localhost:5100/tool/calendar_list_events", {
+      calendarId,
       maxResults: 10,
     });
     return { success: true, data: response.data.events };
@@ -65,7 +74,6 @@ export async function fetchCalendarEvents() {
     return { success: false, data: [] };
   }
 }
-//TODO add fetchDriveSearch(query) and fetchDriveRead(fileId)
 
 ///////////
 // SQL Tools

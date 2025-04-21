@@ -1,7 +1,7 @@
 // src/components/DriveView.js
 import React, { useEffect, useState } from "react";
 import DriveTable from "./DriveTable";
-import { fetchDriveItems, fetchDriveFile } from "../api/client"; // Now also importing fetchDriveFile
+import { fetchDriveItems, fetchDriveRead } from "../api/client";
 
 export default function DriveView() {
   const [driveItems, setDriveItems] = useState([]);
@@ -23,7 +23,7 @@ export default function DriveView() {
   // Handle file read action
   const handleRead = async (fileId) => {
     setLoading(true);
-    const result = await fetchDriveFile(fileId);
+    const result = await fetchDriveRead(fileId);
     if (result.success) {
       setSelectedContent(result.data);
     } else {
