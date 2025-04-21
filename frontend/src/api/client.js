@@ -1,15 +1,11 @@
 import axios from "axios";
 
 ///////////
-// General Tools
+// General Tools - Basic arithmetic utility to test server connection
 ///////////
-
 export async function addNumbers(a, b) {
   try {
-    const response = await axios.post("http://localhost:5100/tool/add", {
-      a,
-      b,
-    });
+    const response = await axios.post("http://localhost:5100/tool/add", { a, b });
     const value = response.data.content[0].text;
     return { success: true, data: value };
   } catch (error) {
@@ -19,10 +15,10 @@ export async function addNumbers(a, b) {
 }
 
 ///////////
-// Google Drive Tools
+// Google Drive Tools - Drive integration to list, search, and read files
 ///////////
-
 export async function fetchDriveItems(type = "all") {
+  // Lists files/folders from a specific Drive folder and filters by type
   try {
     const response = await axios.post("http://localhost:5100/tool/drive_list", {
       folderId: "root",
@@ -39,6 +35,7 @@ export async function fetchDriveItems(type = "all") {
 }
 
 export async function fetchDriveSearch(query) {
+  // Searches Drive for items matching a name query
   try {
     const response = await axios.post("http://localhost:5100/tool/drive_search", { query });
     return { success: true, data: response.data.items };
@@ -49,6 +46,7 @@ export async function fetchDriveSearch(query) {
 }
 
 export async function fetchDriveRead(fileId) {
+  // Retrieves readable text content from a Drive file
   try {
     const response = await axios.post("http://localhost:5100/tool/drive_read", { fileId });
     return { success: true, data: response.data.text };
@@ -59,10 +57,10 @@ export async function fetchDriveRead(fileId) {
 }
 
 ///////////
-// Google Calendar Tools
+// Google Calendar Tools - Fetches calendars, event lists, and expanded event info
 ///////////
-
 export async function fetchCalendars() {
+  // Lists all calendars in the user's Google account
   try {
     const response = await axios.post("http://localhost:5100/tool/calendar_list");
     return { success: true, data: response.data.calendars };
@@ -73,6 +71,7 @@ export async function fetchCalendars() {
 }
 
 export async function fetchCalendarEvents(calendarId = "primary") {
+  // Gets a list of upcoming events from the selected calendar
   try {
     const response = await axios.post("http://localhost:5100/tool/calendar_list_events", {
       calendarId,
@@ -86,6 +85,7 @@ export async function fetchCalendarEvents(calendarId = "primary") {
 }
 
 export async function fetchCalendarEventDetails(calendarId, eventId) {
+  // Fetches expanded event details (location, description, attendees)
   try {
     const response = await axios.post("http://localhost:5100/tool/calendar_get_event", {
       calendarId,
@@ -103,10 +103,10 @@ export async function fetchCalendarEventDetails(calendarId, eventId) {
 }
 
 ///////////
-// SQL Tools
+// SQL Tools - Query PostgreSQL, get table list, view schema
 ///////////
-
 export async function runSQLQuery(query, params = []) {
+  // Executes a general-purpose SELECT query with optional parameters
   try {
     const response = await axios.post("http://localhost:5100/tool/sql_query", {
       query,
@@ -120,6 +120,7 @@ export async function runSQLQuery(query, params = []) {
 }
 
 export async function fetchSQLRows() {
+  // Shortcut query for SELECT * FROM users
   try {
     const response = await axios.post("http://localhost:5100/tool/sql_query", {
       query: "SELECT * FROM users",
@@ -133,6 +134,7 @@ export async function fetchSQLRows() {
 }
 
 export async function fetchSQLTableList() {
+  // Calls the listTables tool to get all public DB tables
   try {
     const response = await axios.post("http://localhost:5100/tool/sql_list_tables");
     return { success: true, data: response.data.tables };
@@ -143,6 +145,7 @@ export async function fetchSQLTableList() {
 }
 
 export async function fetchSQLTableSchema(tableName) {
+  // Fetches column names, types, and constraints for a table
   try {
     const response = await axios.post("http://localhost:5100/tool/sql_table_schema", {
       tableName,

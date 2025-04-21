@@ -8,7 +8,9 @@ import {
   DocumentIcon,
 } from "@heroicons/react/24/solid";
 
+// DriveTable renders a styled table view of Google Drive items with file icons and optional Read button
 export default function DriveTable({ items, onReadFile }) {
+  // Show fallback if no items are returned
   if (items.length === 0) {
     return <p style={styles.empty}>No items found.</p>;
   }
@@ -27,6 +29,7 @@ export default function DriveTable({ items, onReadFile }) {
         <tbody>
           {items.map((item) => (
             <tr key={item.id}>
+              {/* Icon based on file type */}
               <td style={styles.td}>
                 {item.type === "folder" ? (
                   <FolderIcon style={styles.icon} />
@@ -40,6 +43,8 @@ export default function DriveTable({ items, onReadFile }) {
                   <PaperClipIcon style={styles.icon} />
                 )}
               </td>
+
+              {/* File or folder name with link to open in Google Drive */}
               <td style={styles.td}>
                 <a
                   href={
@@ -54,13 +59,16 @@ export default function DriveTable({ items, onReadFile }) {
                   {item.name}
                 </a>
               </td>
+
+              {/* Display MIME type or file/folder label */}
               <td style={styles.td}>
                 {item.type === "folder"
                   ? "Folder"
                   : item.mimeType?.split("/").pop() || "File"}
               </td>
+
+              {/* Read button for files */}
               <td style={styles.td}>
-                {/* Show read button only for files */}
                 {item.type === "file" && (
                   <button
                     style={styles.button}
@@ -77,6 +85,7 @@ export default function DriveTable({ items, onReadFile }) {
     </div>
   );
 }
+
 
 const styles = {
   tableWrapper: {

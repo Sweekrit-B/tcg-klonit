@@ -1,3 +1,4 @@
+// Imports for MCP client communication, Express server, and environment configuration
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import express from "express";
@@ -11,60 +12,55 @@ app.use(bodyParser.json());
 app.use(cors());
 dotenv.config();
 
-// Define transport
+// Initializes the MCP client transport to communicate with the MCP server via stdio
 const transport = new StdioClientTransport({
   command: "node",
   args: ["server.js"],
 });
 
-// Define the MCP client
+// Create the MCP client and connect it to the transport
 const client = new Client({
   name: "Demo Client",
   version: "1.0.0",
 });
-
-// Connect the transport to the client
 await client.connect(transport);
 
+// Base route for health checking
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-//TEMPORARY CODE FOR TESTING TODO; REMOVE AFTER TESTING
+// Optional utility to list all available MCP tools
 app.get("/tool/list_all", (req, res) => {
   const tools = client.listTools();
   res.json({ tools });
 });
 
+////////////////////
+// Drive Tools
+////////////////////
 
-////////////////////
-//Drive Tools
-////////////////////
-//real implementation tools for drive
-// Route to list Google Drive items from a specific folder (default: root)
+// Lists Drive files/folders in a folder, defaults to "root"
 app.post("/tool/drive_list", async (req, res) => {
   const { folderId = "root", maxResults = 99 } = req.body;
 
   try {
-    // Call the MCP 'list' tool to fetch Google Drive contents
     const response = await client.callTool({
       name: "list",
       arguments: { folderId, maxResults },
     });
 
-    // Format each line of the returned MCP response into a structured object
+    // Parse each line of response into structured objects
     const items = response.content.map((item) => {
-      // Example item.text: "Specs Sheet (application/vnd.google-docs) [ID: abc123]"
       const match = item.text.match(/^(.+?) \((.+?)\) \[ID: (.+?)\]$/);
       if (!match) return null;
-
       return {
-        id: match[3],         // Google Drive file/folder ID
-        name: match[1],       // File or folder name
-        mimeType: match[2],   // MIME type from Google
-        type: match[2].includes("folder") ? "folder" : "file", // For frontend filtering
+        id: match[3],
+        name: match[1],
+        mimeType: match[2],
+        type: match[2].includes("folder") ? "folder" : "file",
       };
-    }).filter(Boolean); // Filter out any null matches
+    }).filter(Boolean);
 
     res.status(200).json({ items });
   } catch (error) {
@@ -73,8 +69,7 @@ app.post("/tool/drive_list", async (req, res) => {
   }
 });
 
-
-// Route to search for Drive items
+// Searches for Drive items matching the name query
 app.post("/tool/drive_search", async (req, res) => {
   const { query, maxResults = 99 } = req.body;
 
@@ -102,7 +97,7 @@ app.post("/tool/drive_search", async (req, res) => {
   }
 });
 
-// Route to read a file's content
+// Retrieves the readable text contents of a Drive file
 app.post("/tool/drive_read", async (req, res) => {
   const { fileId } = req.body;
 
@@ -120,11 +115,11 @@ app.post("/tool/drive_read", async (req, res) => {
   }
 });
 
-
 ////////////////////
-//SQL Tools
+// SQL Tools
 ////////////////////
 
+// Executes a general SELECT SQL query using the MCP tool
 app.post("/tool/sql_query", async (req, res) => {
   const { query, params = [] } = req.body;
 
@@ -135,8 +130,7 @@ app.post("/tool/sql_query", async (req, res) => {
     });
 
     const textBlock = response.content.find(c => c.type === "text")?.text || "[]";
-    const rows = JSON.parse(textBlock); // Converts the stringified JSON result into real JS objects
-
+    const rows = JSON.parse(textBlock);
     res.status(200).json({ rows });
   } catch (error) {
     console.error("Error calling sqlQuery tool:", error);
@@ -144,7 +138,7 @@ app.post("/tool/sql_query", async (req, res) => {
   }
 });
 
-// List all tables in the database
+// Lists all user-accessible SQL tables in the public schema
 app.post("/tool/sql_list_tables", async (req, res) => {
   try {
     const response = await client.callTool({
@@ -153,10 +147,7 @@ app.post("/tool/sql_list_tables", async (req, res) => {
     });
 
     const text = response.content.find((c) => c.type === "text")?.text || "";
-    const tableNames = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const tableNames = text.split("\n").map((line) => line.trim()).filter(Boolean);
 
     res.status(200).json({ tables: tableNames });
   } catch (error) {
@@ -165,8 +156,7 @@ app.post("/tool/sql_list_tables", async (req, res) => {
   }
 });
 
-
-// Get schema for a selected table
+// Retrieves schema information (columns, types, constraints) for a specific table
 app.post("/tool/sql_table_schema", async (req, res) => {
   const { tableName } = req.body;
 
@@ -178,7 +168,6 @@ app.post("/tool/sql_table_schema", async (req, res) => {
 
     const text = response.content.find(c => c.type === "text")?.text || "[]";
     const schema = JSON.parse(text);
-
     res.status(200).json({ schema });
   } catch (error) {
     console.error("Error calling tableSchema:", error);
@@ -186,12 +175,11 @@ app.post("/tool/sql_table_schema", async (req, res) => {
   }
 });
 
+////////////////////
+// Calendar Tools
+////////////////////
 
-//////////////
-//Calendar Tools
-//////////////
-
-// List all calendars
+// Lists all Google Calendars accessible to the user
 app.post("/tool/calendar_list", async (req, res) => {
   try {
     const response = await client.callTool({ name: "listCalendars", arguments: {} });
@@ -210,7 +198,7 @@ app.post("/tool/calendar_list", async (req, res) => {
   }
 });
 
-// List events from a calendar
+// Lists upcoming events from a selected Google Calendar
 app.post("/tool/calendar_list_events", async (req, res) => {
   const { calendarId = "primary", maxResults = 10 } = req.body;
 
@@ -234,6 +222,7 @@ app.post("/tool/calendar_list_events", async (req, res) => {
   }
 });
 
+// Retrieves detailed information for a single calendar event (location, attendees, etc.)
 app.post("/tool/calendar_get_event", async (req, res) => {
   const { calendarId, eventId } = req.body;
 
@@ -251,9 +240,6 @@ app.post("/tool/calendar_get_event", async (req, res) => {
   }
 });
 
-
-
-
-//Start express on the defined port
+// Start the Express server on localhost:5100
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 export default app;
