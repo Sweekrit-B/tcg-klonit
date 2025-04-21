@@ -8,7 +8,7 @@ import {
   DocumentIcon,
 } from "@heroicons/react/24/solid";
 
-export default function DriveTable({ items }) {
+export default function DriveTable({ items, onReadFile }) {
   if (items.length === 0) {
     return <p style={styles.empty}>No items found.</p>;
   }
@@ -20,8 +20,8 @@ export default function DriveTable({ items }) {
           <tr>
             <th style={styles.th}>Icon</th>
             <th style={styles.th}>Name</th>
-            {/* <th style={styles.th}>Created</th> */}
             <th style={styles.th}>Type</th>
+            <th style={styles.th}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -40,12 +40,35 @@ export default function DriveTable({ items }) {
                   <PaperClipIcon style={styles.icon} />
                 )}
               </td>
-              <td style={styles.td}>{item.name}</td>
-              {/* <td style={styles.td}>{item.createdAt}</td> */}
+              <td style={styles.td}>
+                <a
+                  href={
+                    item.type === "folder"
+                      ? `https://drive.google.com/drive/folders/${item.id}`
+                      : `https://drive.google.com/file/d/${item.id}/view`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={styles.link}
+                >
+                  {item.name}
+                </a>
+              </td>
               <td style={styles.td}>
                 {item.type === "folder"
                   ? "Folder"
                   : item.mimeType?.split("/").pop() || "File"}
+              </td>
+              <td style={styles.td}>
+                {/* Show read button only for files */}
+                {item.type === "file" && (
+                  <button
+                    style={styles.button}
+                    onClick={() => onReadFile(item.id)}
+                  >
+                    Read
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -89,5 +112,18 @@ const styles = {
     height: "20px",
     color: "#666",
   },
-  
+  button: {
+    padding: "0.3rem 0.6rem",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "0.85rem",
+    cursor: "pointer",
+  },
+  link: {
+    color: "#000",
+    textDecoration: "none",
+    transition: "color 0.2s ease-in-out",
+  },
 };
