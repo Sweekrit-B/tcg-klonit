@@ -79,7 +79,7 @@ async function initializeDb(config = {}) {
 // === Google Auth Setup (Drive + Calendar) ===
 const SCOPES = [
   "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/calendar"
+  "https://www.googleapis.com/auth/calendar",
 ];
 const BACKEND_DIR = process.cwd(); // Current working directory
 const TOKEN_PATH = path.join(BACKEND_DIR, "token.json"); // Path to saved user token
@@ -96,7 +96,10 @@ async function authorize() {
     cachedClient = await google.auth.fromJSON(JSON.parse(token));
   } catch {
     // If no token exists, go through OAuth flow and save it
-    cachedClient = await authenticate({ scopes: SCOPES, keyfilePath: CREDENTIALS_PATH });
+    cachedClient = await authenticate({
+      scopes: SCOPES,
+      keyfilePath: CREDENTIALS_PATH,
+    });
     if (cachedClient.credentials) {
       await fs.writeFile(TOKEN_PATH, JSON.stringify(cachedClient.credentials));
     }
@@ -278,40 +281,35 @@ server.tool(
   }
 );
 
-
 // === Google Calendar Tools ===
 // (listCalendars, listEvents, getEvent, createEvent, updateEvent, deleteEvent, searchEvents) to be implemented
 // === Google Calendar Tools ===
 
 // Tool to list all calendars
-server.tool(
-  "listCalendars",
-  {},
-  async () => {
-    try {
-      const calendar = await getCalendarClient();
-      const res = await calendar.calendarList.list();
+server.tool("listCalendars", {}, async () => {
+  try {
+    const calendar = await getCalendarClient();
+    const res = await calendar.calendarList.list();
 
-      const calendarItems = res.data.items || [];
-      const items = calendarItems.map((cal) => ({
-        type: "text",
-        text: `${cal.summary} [ID: ${cal.id}]`,
-      }));
+    const calendarItems = res.data.items || [];
+    const items = calendarItems.map((cal) => ({
+      type: "text",
+      text: `${cal.summary} [ID: ${cal.id}]`,
+    }));
 
-      return {
-        content: items.length
-          ? items
-          : [{ type: "text", text: "No calendars found." }],
-      };
-    } catch (error) {
-      return {
-        content: [
-          { type: "text", text: `Error listing calendars: ${error.message}` },
-        ],
-      };
-    }
+    return {
+      content: items.length
+        ? items
+        : [{ type: "text", text: "No calendars found." }],
+    };
+  } catch (error) {
+    return {
+      content: [
+        { type: "text", text: `Error listing calendars: ${error.message}` },
+      ],
+    };
   }
-);
+});
 
 // Tool to list events from a calendar
 server.tool(
@@ -378,11 +376,11 @@ server.tool(
       const end = event.end.dateTime || event.end.date;
 
       const eventDetails = [
-        `Summary: ${event.summary || 'No title'}`,
+        `Summary: ${event.summary || "No title"}`,
         `When: ${start} to ${end}`,
-        `Location: ${event.location || 'No location specified'}`,
-        `Description: ${event.description || 'No description'}`
-      ].join('\n');
+        `Location: ${event.location || "No location specified"}`,
+        `Description: ${event.description || "No description"}`,
+      ].join("\n");
 
       return {
         content: [{ type: "text", text: eventDetails }],
@@ -409,18 +407,26 @@ server.tool(
     endDateTime: z.string(),
     attendees: z.array(z.string()).optional(),
   },
-  async ({ calendarId, summary, location, description, startDateTime, endDateTime, attendees }) => {
+  async ({
+    calendarId,
+    summary,
+    location,
+    description,
+    startDateTime,
+    endDateTime,
+    attendees,
+  }) => {
     try {
       const calendar = await getCalendarClient();
       const event = {
         summary,
         location,
         description,
-        start: { dateTime: startDateTime, timeZone: 'UTC' },
-        end: { dateTime: endDateTime, timeZone: 'UTC' },
+        start: { dateTime: startDateTime, timeZone: "UTC" },
+        end: { dateTime: endDateTime, timeZone: "UTC" },
       };
       if (attendees?.length > 0) {
-        event.attendees = attendees.map(email => ({ email }));
+        event.attendees = attendees.map((email) => ({ email }));
       }
 
       const res = await calendar.events.insert({
@@ -430,11 +436,15 @@ server.tool(
       });
 
       return {
-        content: [{ type: "text", text: `Event created: ${res.data.htmlLink}` }],
+        content: [
+          { type: "text", text: `Event created: ${res.data.htmlLink}` },
+        ],
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error creating event: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error creating event: ${error.message}` },
+        ],
       };
     }
   }
@@ -453,7 +463,16 @@ server.tool(
     endDateTime: z.string().optional(),
     attendees: z.array(z.string()).optional(),
   },
-  async ({ calendarId, eventId, summary, location, description, startDateTime, endDateTime, attendees }) => {
+  async ({
+    calendarId,
+    eventId,
+    summary,
+    location,
+    description,
+    startDateTime,
+    endDateTime,
+    attendees,
+  }) => {
     try {
       const calendar = await getCalendarClient();
       const existingEvent = await calendar.events.get({ calendarId, eventId });
@@ -465,17 +484,17 @@ server.tool(
       if (startDateTime) {
         updatedEvent.start = {
           dateTime: startDateTime,
-          timeZone: updatedEvent.start.timeZone || 'UTC',
+          timeZone: updatedEvent.start.timeZone || "UTC",
         };
       }
       if (endDateTime) {
         updatedEvent.end = {
           dateTime: endDateTime,
-          timeZone: updatedEvent.end.timeZone || 'UTC',
+          timeZone: updatedEvent.end.timeZone || "UTC",
         };
       }
       if (attendees) {
-        updatedEvent.attendees = attendees.map(email => ({ email }));
+        updatedEvent.attendees = attendees.map((email) => ({ email }));
       }
 
       const res = await calendar.events.update({
@@ -486,11 +505,15 @@ server.tool(
       });
 
       return {
-        content: [{ type: "text", text: `Event updated: ${res.data.htmlLink}` }],
+        content: [
+          { type: "text", text: `Event updated: ${res.data.htmlLink}` },
+        ],
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error updating event: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error updating event: ${error.message}` },
+        ],
       };
     }
   }
@@ -513,7 +536,9 @@ server.tool(
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error deleting event: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error deleting event: ${error.message}` },
+        ],
       };
     }
   }
@@ -555,7 +580,9 @@ server.tool(
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error searching events: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error searching events: ${error.message}` },
+        ],
       };
     }
   }
@@ -567,13 +594,16 @@ server.tool(
   "sqlQuery",
   {
     query: z.string().min(1).describe("SQL SELECT query"),
-    params: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+    params: z
+      .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+      .optional(),
   },
   async ({ query, params = [] }) => {
     try {
       if (!pool) await initializeDb();
       const firstWord = query.trim().split(/\s+/)[0].toLowerCase();
-      if (!["select", "with"].includes(firstWord)) throw new Error("Only SELECT queries allowed");
+      if (!["select", "with"].includes(firstWord))
+        throw new Error("Only SELECT queries allowed");
 
       const result = await pool.query(query, params);
       return {
@@ -581,7 +611,9 @@ server.tool(
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error executing SQL query: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error executing SQL query: ${error.message}` },
+        ],
       };
     }
   }
@@ -597,11 +629,18 @@ server.tool("listTables", {}, async () => {
 
     const names = result.rows.map((r) => r.table_name);
     return {
-      content: [{ type: "text", text: names.length ? names.join("\n") : "No tables found." }],
+      content: [
+        {
+          type: "text",
+          text: names.length ? names.join("\n") : "No tables found.",
+        },
+      ],
     };
   } catch (error) {
     return {
-      content: [{ type: "text", text: `Error listing tables: ${error.message}` }],
+      content: [
+        { type: "text", text: `Error listing tables: ${error.message}` },
+      ],
     };
   }
 });
@@ -612,13 +651,16 @@ server.tool(
   async ({ tableName }) => {
     try {
       if (!pool) await initializeDb();
-      const result = await pool.query(`
+      const result = await pool.query(
+        `
         SELECT column_name, data_type, character_maximum_length,
                column_default, is_nullable
         FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = $1
         ORDER BY ordinal_position
-      `, [tableName]);
+      `,
+        [tableName]
+      );
 
       if (result.rows.length === 0) {
         return {
@@ -631,12 +673,13 @@ server.tool(
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error retrieving schema: ${error.message}` }],
+        content: [
+          { type: "text", text: `Error retrieving schema: ${error.message}` },
+        ],
       };
     }
   }
 );
-
 
 // === Transport + Init ===
 const transport = new StdioServerTransport(); // Create transport for communication with MCP client
