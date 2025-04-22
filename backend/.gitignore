@@ -17,4 +17,4 @@ Thumbs.db
 credentials_drive.json
 .env
 credentials.json
-token.json
+backend/token.json
