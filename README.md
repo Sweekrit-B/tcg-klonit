@@ -73,3 +73,28 @@ npx @modelcontextprotocol/inspector node server.js
 # Frontend
 
 Contains base frontend setup meant offering base functionality after connecting to MCP.
+
+# Using MCP with Claude Desktop
+
+To integrate this MCP server with an LLM, we can use Claude Desktop.
+
+1. First, download [Claude Desktop](https://claude.ai/download).
+2. Open Claude Desktop, and navigate to Settings -> Developer -> Edit Config.
+3. Open the `.config file` in any text editor
+4. Replace the contents of this file with the following. Don't forget to modify the path in the `.json` to the actual file path on your computer
+   ```json
+   {
+     "mcpServers": {
+       "gdrive": {
+         "command": "node",
+         "args": [
+           "/Path/to/tcg-klonit/backend/server.js"
+         ]
+       }
+     }
+   }
+   ```
+   Don't forget to modify the path in the `.json` to the actual file path on your computer
+5. Restart Claude Desktop
+
+After, you will then see the MCP servers listed on your Claude Desktop UI, and you will be able to use the tools accordingly.
