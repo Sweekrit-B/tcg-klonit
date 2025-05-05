@@ -4,19 +4,14 @@ import {
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-// Import PostgreSQL client
 import pg from "pg";
 const { Pool } = pg;
-// Import dotenv to load environment variables from .env file
 import dotenv from "dotenv";
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Database connection pool
 let pool = null;
 
-// Function to initialize database connection
 async function initializeDb(config = {}) {
   // Default PostgreSQL connection config
   const defaultConfig = {
@@ -32,11 +27,9 @@ async function initializeDb(config = {}) {
   // Merge default config with provided config
   const connectionConfig = { ...defaultConfig, ...config };
 
-  // Create a new pool
   pool = new Pool(connectionConfig);
 
   try {
-    // Test connection
     const client = await pool.connect();
     console.error("Successfully connected to PostgreSQL database");
 
@@ -108,7 +101,7 @@ server.tool("add", { a: z.number(), b: z.number() }, async ({ a, b }) => ({
  * tables
  */
 
-// NOTE: Main SQL Query Tool created 4/12 by Spencer
+// NOTE: Main SQL Query Tool created 4/12
 server.tool(
   "sqlQuery",
   {
@@ -124,7 +117,6 @@ server.tool(
   },
   async ({ query, params = [] }) => {
     try {
-      // Checking if pool is crorrectly initialized
       if (!pool) {
         await initializeDb();
       }
@@ -134,12 +126,10 @@ server.tool(
       const firstWord = normalizedQuery.split(/\s+/)[0];
 
       // Making sure we only use SELECT queries
-      // TODO: add new queries to be allowed: SQL DB INSERT/UPDATE
       if (firstWord !== "select" && firstWord !== "with") {
         throw new Error("Only SELECT queries are allowed for security reasons");
       }
 
-      // Actually do the query using PostgreSQL
       const result = await pool.query(query, params);
 
       return {
@@ -156,6 +146,207 @@ server.tool(
           {
             type: "text",
             text: `Error executing SQL query: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// NOTE: Insert Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "data": {
+//     "name": "John Doe",
+//     "email": "john@example.com"
+//   }
+// }
+server.tool(
+  "insertData",
+  {
+    tableName: z.string().min(1).describe("Name of the table to insert into"),
+    data: z
+      .record(z.any())
+      .describe("Object containing column names and values to insert"),
+  },
+  async ({ tableName, data }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      const columns = Object.keys(data);
+      const values = Object.values(data);
+      const placeholders = values.map((_, index) => `$${index + 1}`);
+
+      const query = `
+        INSERT INTO ${tableName} (${columns.join(", ")})
+        VALUES (${placeholders.join(", ")})
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully inserted data into ${tableName}:\n${JSON.stringify(
+              result.rows[0],
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error inserting data: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// NOTE: Update Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "data": {
+//     "email": "newemail@example.com"
+//   },
+//   "where": {
+//     "id": 1
+//   }
+// }
+server.tool(
+  "updateData",
+  {
+    tableName: z.string().min(1).describe("Name of the table to update"),
+    data: z
+      .record(z.any())
+      .describe("Object containing column names and values to update"),
+    where: z
+      .record(z.any())
+      .describe("Object containing conditions for the WHERE clause"),
+  },
+  async ({ tableName, data, where }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      const setClause = Object.keys(data)
+        .map((key, index) => `${key} = $${index + 1}`)
+        .join(", ");
+
+      const whereClause = Object.keys(where)
+        .map(
+          (key, index) => `${key} = $${Object.keys(data).length + index + 1}`
+        )
+        .join(" AND ");
+
+      const values = [...Object.values(data), ...Object.values(where)];
+
+      const query = `
+        UPDATE ${tableName}
+        SET ${setClause}
+        WHERE ${whereClause}
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully updated data in ${tableName}:\n${JSON.stringify(
+              result.rows,
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error updating data: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// NOTE: Delete Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "where": {
+//     "id": 1
+//   }
+// }
+server.tool(
+  "deleteData",
+  {
+    tableName: z.string().min(1).describe("Name of the table to delete from"),
+    where: z
+      .record(z.any())
+      .describe("Object containing conditions for the WHERE clause"),
+  },
+  async ({ tableName, where }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      const whereClause = Object.keys(where)
+        .map((key, index) => `${key} = $${index + 1}`)
+        .join(" AND ");
+
+      const values = Object.values(where);
+
+      const query = `
+        DELETE FROM ${tableName}
+        WHERE ${whereClause}
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully deleted data from ${tableName}:\n${JSON.stringify(
+              result.rows,
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error deleting data: ${error.message}`,
           },
         ],
       };
