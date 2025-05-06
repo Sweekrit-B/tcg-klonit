@@ -1,4 +1,3 @@
-
 # MCP Integration Project
 
 This repository contains a full-stack integration of the Model Context Protocol (MCP) with three major tools:
@@ -19,15 +18,18 @@ This repository contains a full-stack integration of the Model Context Protocol 
 ### Google OAuth Setup (For Drive + Calendar Access)
 
 #### 1. Create a Google Cloud Project
+
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Click **New Project**, provide a name, and create it
 3. Select your project from the top dropdown
 
 #### 2. Enable APIs
+
 1. Go to **APIs & Services** > **Library**
 2. Enable **Google Drive API** and **Google Calendar API**
 
 #### 3. Configure OAuth Consent Screen
+
 1. Go to **APIs & Services** > **OAuth consent screen**
 2. Choose **Internal** (Google Workspace) or **External** (personal Gmail)
 3. Fill out required fields
@@ -37,11 +39,13 @@ This repository contains a full-stack integration of the Model Context Protocol 
 5. For External Testing mode, add your email under test users
 
 #### 4. Create OAuth Credentials
+
 1. Go to **APIs & Services** > **Credentials**
 2. Click **Create Credentials** > **OAuth Client ID**
 3. Select **Desktop App** and create
 
 #### 5. Download & Add `credentials.json`
+
 1. Download the JSON
 2. Rename it to `credentials.json`
 3. Place it in the `/backend` directory
@@ -165,7 +169,6 @@ Use `npx @modelcontextprotocol/inspector node server.js` to inspect tools.
 - Delete `token.json` and reauthenticate if refresh tokens fail
 - Use `console.log` and backend logs to debug request flow
 
-
 ---
 
 ## 🏁 First-Time Setup Notes
@@ -173,11 +176,13 @@ Use `npx @modelcontextprotocol/inspector node server.js` to inspect tools.
 ### Starting the MCP Server for the First Time
 
 1. Open a terminal and navigate to the `backend` directory:
+
    ```bash
    cd backend
    ```
 
 2. Start the MCP server directly:
+
    ```bash
    node server.js
    ```
@@ -198,16 +203,19 @@ Use `npx @modelcontextprotocol/inspector node server.js` to inspect tools.
 ### Running the Frontend
 
 1. Open a **new terminal tab or window**, and navigate to the `frontend` directory:
+
    ```bash
    cd frontend
    ```
 
 2. Install frontend dependencies:
+
    ```bash
    npm install
    ```
 
 3. Start the React frontend app:
+
    ```bash
    npm start
    ```
