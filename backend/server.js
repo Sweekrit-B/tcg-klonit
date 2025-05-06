@@ -22,60 +22,6 @@ let pool = null; // Will hold the PostgreSQL connection pool
 // Load environment variables from .env file if it exists
 dotenv.config();
 
-// Function to initialize DB connection and setup default data
-async function initializeDb(config = {}) {
-  const defaultConfig = {
-    host: process.env.PGHOST || "localhost",
-    port: process.env.PGPORT || 5432,
-    user: process.env.PGUSER || "mcp_user",
-    password: process.env.PGPASSWORD || "mcp_password",
-    database: process.env.PGDATABASE || "mcp_demo",
-    max: 20,
-    idleTimeoutMillis: 30000,
-  };
-
-  const connectionConfig = { ...defaultConfig, ...config }; // Merge config with defaults
-  pool = new Pool(connectionConfig); // Create pool instance
-
-  const client = await pool.connect(); // Connect to DB
-  console.log("✅ Connected to PostgreSQL");
-
-  // Create example tables and insert dummy data if needed
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(100) NOT NULL,
-      email VARCHAR(100) UNIQUE NOT NULL
-    );
-
-    INSERT INTO users (name, email) SELECT 'Alice', 'alice@example.com'
-    WHERE NOT EXISTS (SELECT 1 FROM users LIMIT 1);
-
-    INSERT INTO users (name, email) SELECT 'Bob', 'bob@example.com'
-    WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='bob@example.com');
-
-    INSERT INTO users (name, email) SELECT 'Charlie', 'charlie@example.com'
-    WHERE NOT EXISTS (SELECT 1 FROM users WHERE email='charlie@example.com');
-
-    CREATE TABLE IF NOT EXISTS products (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(100) NOT NULL,
-      price DECIMAL(10, 2) NOT NULL
-    );
-
-    INSERT INTO products (name, price) SELECT 'Laptop', 1299.99
-    WHERE NOT EXISTS (SELECT 1 FROM products LIMIT 1);
-
-    INSERT INTO products (name, price) SELECT 'Smartphone', 699.99
-    WHERE NOT EXISTS (SELECT 1 FROM products WHERE name='Smartphone');
-
-    INSERT INTO products (name, price) SELECT 'Headphones', 149.99
-    WHERE NOT EXISTS (SELECT 1 FROM products WHERE name='Headphones');
-  `);
-
-  client.release(); // Release connection back to pool
-}
-
 // === Google Auth Setup (Drive + Calendar) ===
 const SCOPES = [
   "https://www.googleapis.com/auth/drive.readonly",
@@ -590,97 +536,6 @@ server.tool(
 
 // === SQL Tools ===
 
-server.tool(
-  "sqlQuery",
-  {
-    query: z.string().min(1).describe("SQL SELECT query"),
-    params: z
-      .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
-      .optional(),
-  },
-  async ({ query, params = [] }) => {
-    try {
-      if (!pool) await initializeDb();
-      const firstWord = query.trim().split(/\s+/)[0].toLowerCase();
-      if (!["select", "with"].includes(firstWord))
-        throw new Error("Only SELECT queries allowed");
-
-      const result = await pool.query(query, params);
-      return {
-        content: [{ type: "text", text: JSON.stringify(result.rows, null, 2) }],
-      };
-    } catch (error) {
-      return {
-        content: [
-          { type: "text", text: `Error executing SQL query: ${error.message}` },
-        ],
-      };
-    }
-  }
-);
-
-server.tool("listTables", {}, async () => {
-  try {
-    if (!pool) await initializeDb();
-    const result = await pool.query(`
-      SELECT table_name FROM information_schema.tables
-      WHERE table_schema = 'public' ORDER BY table_name
-    `);
-
-    const names = result.rows.map((r) => r.table_name);
-    return {
-      content: [
-        {
-          type: "text",
-          text: names.length ? names.join("\n") : "No tables found.",
-        },
-      ],
-    };
-  } catch (error) {
-    return {
-      content: [
-        { type: "text", text: `Error listing tables: ${error.message}` },
-      ],
-    };
-  }
-});
-
-server.tool(
-  "tableSchema",
-  { tableName: z.string().min(1) },
-  async ({ tableName }) => {
-    try {
-      if (!pool) await initializeDb();
-      const result = await pool.query(
-        `
-        SELECT column_name, data_type, character_maximum_length,
-               column_default, is_nullable
-        FROM information_schema.columns
-        WHERE table_schema = 'public' AND table_name = $1
-        ORDER BY ordinal_position
-      `,
-        [tableName]
-      );
-
-      if (result.rows.length === 0) {
-        return {
-          content: [{ type: "text", text: `Table '${tableName}' not found.` }],
-        };
-      }
-
-      return {
-        content: [{ type: "text", text: JSON.stringify(result.rows, null, 2) }],
-      };
-    } catch (error) {
-      return {
-        content: [
-          { type: "text", text: `Error retrieving schema: ${error.message}` },
-        ],
-      };
-    }
-  }
-);
-
 // === Transport + Init ===
 // Removed duplicate declaration of transport
 
@@ -697,6 +552,19 @@ server.tool(
     console.error("❌ Initialization failed:", error); // Log errors if any occur
     process.exit(1); // Exit with failure code
   }});
+
+  async function initializeDb(config = {}) {
+    // Default PostgreSQL connection config
+    const defaultConfig = {
+      host: process.env.PGHOST || "localhost",
+      port: process.env.PGPORT || 5432,
+      user: process.env.PGUSER || "mcp_user",
+      password: process.env.PGPASSWORD || "mcp_password",
+      database: process.env.PGDATABASE || "mcp_demo",
+      max: 20,
+      idleTimeoutMillis: 30000,
+    };
+
 
 // Merge default config with provided config
 const connectionConfig = { ...defaultConfig, ...config };
@@ -829,6 +697,7 @@ try {
 } catch (error) {
   console.error("Error connecting to the database:", error);
   throw error;
+}
 }
 
 // Define the MCP server
