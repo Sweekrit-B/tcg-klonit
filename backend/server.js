@@ -10,6 +10,7 @@ import { google } from "googleapis"; // Google API clients
 import { authenticate } from "@google-cloud/local-auth"; // For local OAuth flow
 import fs from "fs/promises"; // Async file system access
 import path from "path"; // File path handling
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 // === MCP Server Setup ===
@@ -27,11 +28,14 @@ const SCOPES = [
   "https://www.googleapis.com/auth/drive.readonly",
   "https://www.googleapis.com/auth/calendar",
 ];
-const BACKEND_DIR = process.cwd(); // Current working directory
-const TOKEN_PATH = path.join(BACKEND_DIR, "token.json"); // Path to saved user token
-const CREDENTIALS_PATH = path.join(BACKEND_DIR, "credentials.json"); // Path to client secrets
 
-let cachedClient = null; // Cache so we don’t re-authenticate every time
+// Get absolute paths for credentials
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CREDENTIALS_PATH = path.resolve(__dirname, "credentials.json");
+const TOKEN_PATH = path.resolve(__dirname, "token.json");
+
+let cachedClient = null; // Cache so we don't re-authenticate every time
 
 // Auth function shared by Google Drive and Calendar tools
 async function authorize() {

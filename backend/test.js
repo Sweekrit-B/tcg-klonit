@@ -298,11 +298,9 @@ async function testSqlMCP() {
 }
 
 testSqlMCP();
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 async function testCalendarMCP() {
-  console.log("Starting Google Calendar MCP test...");
+  console.log("Starting Calendar Connector MCP test...");
 
   // Define transport
   const transport = new StdioClientTransport({
