@@ -965,7 +965,8 @@ async function initializeDb(config = {}) {
       physician_id SERIAL PRIMARY KEY,
       first_name VARCHAR(255),
       last_name VARCHAR(255),
-      specialty VARCHAR(255)
+      specialty VARCHAR(255),
+      label TEXT DEFAULT 'Physician Information'
     );
 
     CREATE TABLE IF NOT EXISTS patients (
@@ -975,7 +976,8 @@ async function initializeDb(config = {}) {
       last_name VARCHAR(255),
       phone_number VARCHAR(20),
       date_of_birth DATE,
-      pin VARCHAR(8)
+      pin VARCHAR(8),
+      label TEXT DEFAULT 'Patient Information'
     );
 
     CREATE TABLE IF NOT EXISTS appointments (
@@ -985,7 +987,8 @@ async function initializeDb(config = {}) {
       appointment_datetime TIMESTAMP,
       appointment_type VARCHAR(255),
       notes TEXT,
-      google_calendar_event_id VARCHAR(255)
+      google_calendar_event_id VARCHAR(255),
+      label TEXT DEFAULT 'Appointments Information'
     );
 
     CREATE TABLE IF NOT EXISTS treatments (
@@ -993,14 +996,15 @@ async function initializeDb(config = {}) {
       patient_id INT REFERENCES patients(patient_id),
       problem VARCHAR(255),
       treatment TEXT,
-      physician_id INT REFERENCES physicians(physician_id)
+      physician_id INT REFERENCES physicians(physician_id),
+      label TEXT DEFAULT 'Treatments Information'
     );
   `);
 
     // --- Insert sample/mock data if tables are empty ---
     // Physicians
     await client.query(`
-    INSERT INTO physicians (first_name, last_name, specialty)
+    INSERT INTO physicians (first_name, last_name, specialty,label)
     SELECT * FROM (VALUES
       ('Alice', 'Smith', 'Cardiology'),
       ('Bob', 'Jones', 'Dermatology'),
@@ -1012,7 +1016,7 @@ async function initializeDb(config = {}) {
 
     // Patients
     await client.query(`
-    INSERT INTO patients (email, first_name, last_name, phone_number, date_of_birth, pin)
+    INSERT INTO patients (email, first_name, last_name, phone_number, date_of_birth, pin,label)
     SELECT * FROM (VALUES
       ('patient1@example.com', 'John', 'Doe', '555-0001', '1980-01-01'::DATE, '12345678'),
       ('patient2@example.com', 'Jane', 'Smith', '555-0002', '1985-02-02'::DATE, '23456789'),
@@ -1030,7 +1034,7 @@ async function initializeDb(config = {}) {
 
     // Appointments
     await client.query(`
-    INSERT INTO appointments (patient_id, physician_id, appointment_datetime, appointment_type, notes, google_calendar_event_id)
+    INSERT INTO appointments (patient_id, physician_id, appointment_datetime, appointment_type, notes, google_calendar_event_id,label)
     SELECT * FROM (VALUES
       (1, 1, '2024-05-01 09:00:00'::TIMESTAMP, 'Checkup', 'Routine checkup', 'evt1'),
       (2, 2, '2024-05-02 10:00:00'::TIMESTAMP, 'Consultation', 'Discuss symptoms', 'evt2'),
@@ -1048,7 +1052,7 @@ async function initializeDb(config = {}) {
 
     // Treatments
     await client.query(`
-    INSERT INTO treatments (patient_id, problem, treatment, physician_id)
+    INSERT INTO treatments (patient_id, problem, treatment, physician_id,label)
     SELECT * FROM (VALUES
       (1, 'Hypertension', 'Medication A', 1),
       (2, 'Diabetes', 'Medication B', 2),
@@ -1092,6 +1096,163 @@ server.resource(
       },
     ],
   })
+);
+
+// Tool to get current labels for all tables
+server.tool("getLabels", {}, async () => {
+  try {
+    if (!pool) {
+      await initializeDb();
+    }
+
+    // Query to get one example of each label from each table
+    const queries = [
+      `SELECT 'physicians' as table_name, label FROM physicians LIMIT 1`,
+      `SELECT 'patients' as table_name, label FROM patients LIMIT 1`,
+      `SELECT 'appointments' as table_name, label FROM appointments LIMIT 1`,
+      `SELECT 'treatments' as table_name, label FROM treatments LIMIT 1`
+    ];
+
+    // Execute all queries
+    const results = await Promise.all(
+      queries.map(query => pool.query(query))
+    );
+
+    // Combine results
+    const labels = results
+      .map(result => result.rows[0])
+      .filter(row => row); // Filter out empty results
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Current labels:\n${JSON.stringify(labels, null, 2)}`
+        }
+      ]
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error fetching labels: ${error.message}`
+        }
+      ]
+    };
+  }
+});
+
+// Tool to update a table's label
+server.tool(
+  "updateLabel",
+  {
+    tableName: z.string().min(1).describe("Name of the table to update labels for (physicians, patients, appointments, or treatments)"),
+    newLabel: z.string().min(1).describe("New label text to set for the table")
+  },
+  async ({ tableName, newLabel }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      // Validate tableName to prevent SQL injection
+      const validTables = ['physicians', 'patients', 'appointments', 'treatments'];
+      if (!validTables.includes(tableName)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Invalid table name. Must be one of: ${validTables.join(', ')}`
+            }
+          ]
+        };
+      }
+
+      // Update all records in the table to have the new label
+      const query = `UPDATE ${tableName} SET label = $1`;
+      await pool.query(query, [newLabel]);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully updated label for ${tableName} to "${newLabel}"`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error updating label: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+);
+
+// Tool to get a specific table's current label
+server.tool(
+  "getTableLabel",
+  {
+    tableName: z.string().min(1).describe("Name of the table to get label for (physicians, patients, appointments, or treatments)")
+  },
+  async ({ tableName }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      // Validate tableName to prevent SQL injection
+      const validTables = ['physicians', 'patients', 'appointments', 'treatments'];
+      if (!validTables.includes(tableName)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Invalid table name. Must be one of: ${validTables.join(', ')}`
+            }
+          ]
+        };
+      }
+
+      // Get the label from the first record
+      const query = `SELECT label FROM ${tableName} LIMIT 1`;
+      const result = await pool.query(query);
+
+      if (result.rows.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `No records found in ${tableName}`
+            }
+          ]
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Current label for ${tableName}: "${result.rows[0].label}"`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error getting label: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
 );
 
 // Define the transport for the server
