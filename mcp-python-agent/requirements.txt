@@ -1,0 +1,4 @@
+google-generativeai
+python-dotenv
+#psycopg2-binary  # For SQL later
+#google-api-python-client  # For Drive/Calendar
