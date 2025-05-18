@@ -1,0 +1,71 @@
+
+[
+    {
+      "tool": "listEvents",
+      "description": "List upcoming events from a calendar within a specified time range.",
+      "parameters": {
+        "calendarId": "string (optional)",
+        "maxResults": "integer (optional, default: 10)",
+        "timeMin": "ISO 8601 datetime (optional)",
+        "timeMax": "ISO 8601 datetime (optional)"
+      }
+    },
+    {
+      "tool": "getEvent",
+      "description": "Get full details of a specific event using its ID.",
+      "parameters": {
+        "eventId": "string (required)",
+        "calendarId": "string (optional, default: 'primary')"
+      }
+    },
+    {
+      "tool": "createEvent",
+      "description": "Create a new event in the specified calendar.",
+      "parameters": {
+        "summary": "string (required)",
+        "startDateTime": "ISO 8601 datetime (required)",
+        "endDateTime": "ISO 8601 datetime (required)",
+        "calendarId": "string (optional, default: 'primary')",
+        "location": "string (optional)",
+        "description": "string (optional)",
+        "attendees": "list of strings (optional, email addresses)"
+      }
+    },
+    {
+      "tool": "updateEvent",
+      "description": "Update fields of an existing calendar event using its ID.",
+      "parameters": {
+        "eventId": "string (required)",
+        "calendarId": "string (optional, default: 'primary')",
+        "summary": "string (optional)",
+        "location": "string (optional)",
+        "description": "string (optional)",
+        "startDateTime": "ISO 8601 datetime (optional)",
+        "endDateTime": "ISO 8601 datetime (optional)",
+        "attendees": "list of strings (optional, email addresses)"
+      }
+    },
+    {
+      "tool": "deleteEvent",
+      "description": "Delete an event from the calendar using its ID.",
+      "parameters": {
+        "eventId": "string (required)",
+        "calendarId": "string (optional, default: 'primary')"
+      }
+    },
+    {
+      "tool": "searchEvents",
+      "description": "Search for calendar events that match a keyword.",
+      "parameters": {
+        "query": "string (required)",
+        "calendarId": "string (optional, default: 'primary')",
+        "maxResults": "integer (optional, default: 10)"
+      }
+    },
+    {
+      "tool": "listCalendars",
+      "description": "List all accessible calendars for the user.",
+      "parameters": {}
+    }
+  ]
+  
