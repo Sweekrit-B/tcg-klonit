@@ -1,7 +1,7 @@
 
 [
     {
-      "tool": "listEvents",
+      "tool": "list_events",
       "description": "List upcoming events from a calendar within a specified time range.",
       "parameters": {
         "calendar_id": "string (optional)",
@@ -11,7 +11,7 @@
       }
     },
     {
-      "tool": "getEvent",
+      "tool": "get_event",
       "description": "Get full details of a specific event using its ID.",
       "parameters": {
         "event_id": "string (required)",
@@ -19,7 +19,7 @@
       }
     },
     {
-      "tool": "createEvent",
+      "tool": "create_event",
       "description": "Create a new event in the specified calendar.",
       "parameters": {
         "summary": "string (required)",
@@ -32,7 +32,7 @@
       }
     },
     {
-      "tool": "updateEvent",
+      "tool": "update_event",
       "description": "Update fields of an existing calendar event using its ID.",
       "parameters": {
         "event_id": "string (required)",
@@ -46,7 +46,7 @@
       }
     },
     {
-      "tool": "deleteEvent",
+      "tool": "delete_event",
       "description": "Delete an event from the calendar using its ID.",
       "parameters": {
         "event_id": "string (required)",
@@ -54,7 +54,7 @@
       }
     },
     {
-      "tool": "searchEvents",
+      "tool": "search_events",
       "description": "Search for calendar events that match a keyword.",
       "parameters": {
         "query": "string (required)",
@@ -63,7 +63,7 @@
       }
     },
     {
-      "tool": "listCalendars",
+      "tool": "list_calendars",
       "description": "List all accessible calendars for the user.",
       "parameters": {}
     },
