@@ -80,5 +80,8 @@ User prompt: "{user_prompt}"
         print("❌ Error during tool execution or parsing:", str(e))
 
 # === Run Agent ===
+
 if __name__ == "__main__":
-    run_agent("list upcoming meetings")
+    user_input = input("Enter your request: ")
+    run_agent(user_input)
+    
