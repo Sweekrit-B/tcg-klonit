@@ -13,14 +13,19 @@ from tools.calendar_tool import (
     delete_event,
     search_events
 )
+from tools.drive_tool import( list_files, search_files, read_file)
 
 # Add Drive/SQL later as needed
 
 tool_registry = {
-    "listEvents": list_events,
-    "getEvent": get_event,
-    "createEvent": create_event,
-    "updateEvent": update_event,
-    "deleteEvent": delete_event,
-    "searchEvents": search_events,
+    "list_events": list_events,
+    "get_event": get_event,
+    "create_event": create_event,
+    "update_event": update_event,
+    "delete_event": delete_event,
+    "search_events": search_events,
+    "list_files": list_files,
+    "search_files": search_files,
+    "read_file": read_file,
 }
+

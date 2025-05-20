@@ -66,6 +66,29 @@
       "tool": "listCalendars",
       "description": "List all accessible calendars for the user.",
       "parameters": {}
+    },
+    {
+      "tool": "list_files",
+      "description": "List files and folders in a Google Drive folder.",
+      "parameters": {
+        "folder_id": { "type": "string", "required": false },
+        "max_results": { "type": "integer", "required": false }
+      }
+    },
+    {
+      "tool": "search_files",
+      "description": "Search for files and folders in Google Drive by name.",
+      "parameters": {
+        "query": { "type": "string", "required": true },
+        "max_results": { "type": "integer", "required": false }
+      }
+    },
+    {
+      "tool": "read_file",
+      "description": "Download and return the text content of a Google Drive file.",
+      "parameters": {
+        "file_id": { "type": "string", "required": true }
+      }
     }
   ]
   
