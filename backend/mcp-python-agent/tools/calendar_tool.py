@@ -3,7 +3,7 @@
 import os
 import json
 import dotenv
-from datetime import datetime
+from datetime import datetime, timezone
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -51,6 +51,11 @@ def list_calendars():
 
 def list_events(calendar_id="primary", max_results=10, time_min=None, time_max=None):
     cal = get_calendar_client()
+
+    if time_min is None:
+        # Default to current UTC time in RFC 3339 format
+        time_min = datetime.now(timezone.utc).isoformat()
+
     params = {
         "calendarId": calendar_id,
         "maxResults": max_results,

@@ -72,15 +72,15 @@ User prompt: "{user_prompt}"
         results = tool_registry[tool_name](**tool_args)
 
         # 4. Summarize result with Gemini
-        print("\n✅ Tool result:\n", json.dumps(results, indent=2))
+        print("\nTool result:\n", json.dumps(results, indent=2))
         summary_prompt = f"Summarize this output from the tool '{tool_name}':\n{json.dumps(results, indent=2)}"
         summary = model.generate_content(summary_prompt)
         print("\n🗣️ Gemini summary:\n", summary.text)
 
     except json.JSONDecodeError:
-        print("❌ Gemini did not return valid JSON. Try adjusting your prompt format.")
+        print("Gemini did not return valid JSON. Try adjusting your prompt format.")
     except Exception as e:
-        print("❌ Error during tool execution or parsing:", str(e))
+        print("Error during tool execution or parsing:", str(e))
 
     print("\n====================\n")
 
