@@ -1,6 +1,6 @@
 """Server implementation for database operations."""
 from mcp.server.fastmcp import FastMCP
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 import os
 from psycopg2 import pool
 from dotenv import load_dotenv
@@ -34,7 +34,7 @@ pools = {
     'retail': pool.SimpleConnectionPool(1, 20, **RETAIL_DB_CONFIG)
 }
 
-def execute_query(db_type: str, query: str, params: tuple = None) -> Dict[str, Any]:
+def execute_query(db_type: str, query: str, params: Union[tuple, List[Any], None] = None) -> Dict[str, Any]:
     """Execute a query and return results as a dictionary."""
     conn = pools[db_type].getconn()
     try:
@@ -45,11 +45,16 @@ def execute_query(db_type: str, query: str, params: tuple = None) -> Dict[str, A
                 colnames = [desc[0] for desc in cur.description]
                 return {
                     "success": True,
-                    "data": [dict(zip(colnames, row)) for row in results]
+                    "data": [dict(zip(colnames, row)) for row in results],
+                    "affected_rows": cur.rowcount
                 }
             else:
                 conn.commit()
-                return {"success": True, "message": "Operation completed successfully"}
+                return {
+                    "success": True,
+                    "message": "Operation completed successfully",
+                    "affected_rows": cur.rowcount
+                }
     except Exception as e:
         conn.rollback()
         return {"success": False, "error": str(e)}
@@ -58,8 +63,8 @@ def execute_query(db_type: str, query: str, params: tuple = None) -> Dict[str, A
 
 # Medical Database Tools
 @mcp.tool()
-def medical_query(query: str, params: List[Any] = None) -> Dict[str, Any]:
-    """Execute a query on the medical database."""
+def medical_query(query: str, params: List[Any] | None = None) -> Dict[str, Any]:
+    """Execute a SELECT query on the medical database."""
     if not query.lower().strip().startswith(('select', 'with')):
         return {
             "content": [{
@@ -68,11 +73,75 @@ def medical_query(query: str, params: List[Any] = None) -> Dict[str, Any]:
             }]
         }
     
-    result = execute_query('medical', query, params)
+    result = execute_query('medical', query, tuple(params) if params else None)
     return {
         "content": [{
             "type": "text",
             "text": str(result['data']) if result['success'] else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def medical_insert(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    """Insert a record into a medical database table."""
+    columns = list(data.keys())
+    values = list(data.values())
+    placeholders = ["%s"] * len(values)
+    
+    query = f"""
+        INSERT INTO {table} ({', '.join(columns)})
+        VALUES ({', '.join(placeholders)})
+        RETURNING *
+    """
+    
+    result = execute_query('medical', query, tuple(values))
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Insert successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def medical_update(table: str, data: Dict[str, Any], where_clause: str, where_params: List[Any] | None = None) -> Dict[str, Any]:
+    """Update records in a medical database table."""
+    set_items = [f"{k} = %s" for k in data.keys()]
+    values = list(data.values())
+    
+    if where_params:
+        values.extend(where_params)
+    
+    query = f"""
+        UPDATE {table}
+        SET {', '.join(set_items)}
+        WHERE {where_clause}
+    """
+    
+    result = execute_query('medical', query, tuple(values))
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Update successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def medical_delete(table: str, where_clause: str, where_params: List[Any] | None = None) -> Dict[str, Any]:
+    """Delete records from a medical database table."""
+    query = f"""
+        DELETE FROM {table}
+        WHERE {where_clause}
+        RETURNING *
+    """
+    
+    result = execute_query('medical', query, tuple(where_params) if where_params else None)
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Delete successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
         }]
     }
 
@@ -122,8 +191,8 @@ def medical_table_schema(table_name: str) -> Dict[str, Any]:
 
 # Retail Database Tools
 @mcp.tool()
-def retail_query(query: str, params: List[Any] = None) -> Dict[str, Any]:
-    """Execute a query on the retail database."""
+def retail_query(query: str, params: List[Any] | None = None) -> Dict[str, Any]:
+    """Execute a SELECT query on the retail database."""
     if not query.lower().strip().startswith(('select', 'with')):
         return {
             "content": [{
@@ -132,11 +201,75 @@ def retail_query(query: str, params: List[Any] = None) -> Dict[str, Any]:
             }]
         }
     
-    result = execute_query('retail', query, params)
+    result = execute_query('retail', query, tuple(params) if params else None)
     return {
         "content": [{
             "type": "text",
             "text": str(result['data']) if result['success'] else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def retail_insert(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    """Insert a record into a retail database table."""
+    columns = list(data.keys())
+    values = list(data.values())
+    placeholders = ["%s"] * len(values)
+    
+    query = f"""
+        INSERT INTO {table} ({', '.join(columns)})
+        VALUES ({', '.join(placeholders)})
+        RETURNING *
+    """
+    
+    result = execute_query('retail', query, tuple(values))
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Insert successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def retail_update(table: str, data: Dict[str, Any], where_clause: str, where_params: List[Any] | None = None) -> Dict[str, Any]:
+    """Update records in a retail database table."""
+    set_items = [f"{k} = %s" for k in data.keys()]
+    values = list(data.values())
+    
+    if where_params:
+        values.extend(where_params)
+    
+    query = f"""
+        UPDATE {table}
+        SET {', '.join(set_items)}
+        WHERE {where_clause}
+    """
+    
+    result = execute_query('retail', query, tuple(values))
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Update successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
+        }]
+    }
+
+@mcp.tool()
+def retail_delete(table: str, where_clause: str, where_params: List[Any] | None = None) -> Dict[str, Any]:
+    """Delete records from a retail database table."""
+    query = f"""
+        DELETE FROM {table}
+        WHERE {where_clause}
+        RETURNING *
+    """
+    
+    result = execute_query('retail', query, tuple(where_params) if where_params else None)
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"Delete successful. Affected rows: {result.get('affected_rows', 0)}" if result['success'] 
+                   else f"Error: {result['error']}"
         }]
     }
 
