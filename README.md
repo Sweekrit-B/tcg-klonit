@@ -1,107 +1,323 @@
-# Backend for SQL Connector
+# MCP Integration Project
 
-## Prerequisites
+This repository contains a full-stack integration of the Model Context Protocol (MCP) with three major tools:
 
-- Node.js (v14 or higher)
-- PostgreSQL (v12 or higher)
-- npm or yarn
+- Google Drive (read-only access)
+- Google Calendar (read/write access)
+- PostgreSQL (query and schema inspection)
 
-## Setup
+---
 
-1. Install dependencies:
+## 🔧 Backend
 
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) installed (version 14 or higher recommended)
+- A Google account to access Google Cloud Console
+
+### Google OAuth Setup (For Drive + Calendar Access)
+
+#### 1. Create a Google Cloud Project
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Click **New Project**, provide a name, and create it
+3. Select your project from the top dropdown
+
+#### 2. Enable APIs
+
+1. Go to **APIs & Services** > **Library**
+2. Enable **Google Drive API** and **Google Calendar API**
+
+#### 3. Configure OAuth Consent Screen
+
+1. Go to **APIs & Services** > **OAuth consent screen**
+2. Choose **Internal** (Google Workspace) or **External** (personal Gmail)
+3. Fill out required fields
+4. Add scopes:
+   - Drive: `https://www.googleapis.com/auth/drive.readonly`
+   - Calendar: `https://www.googleapis.com/auth/calendar`
+5. For External Testing mode, add your email under test users
+
+#### 4. Create OAuth Credentials
+
+1. Go to **APIs & Services** > **Credentials**
+2. Click **Create Credentials** > **OAuth Client ID**
+3. Select **Desktop App** and create
+
+#### 5. Download & Add `credentials.json`
+
+1. Download the JSON
+2. Rename it to `credentials.json`
+3. Place it in the `/backend` directory
+
+### Install Dependencies
+
+```bash
+cd backend
+npm install
+```
+
+### Testing
+
+The project includes a comprehensive test suite for the MCP (Medical and Commercial Products) server implementation.
+
+#### Test Structure
+
+The test suite is organized into three main test classes:
+
+1. `TestDatabaseCommon` - Tests for common database functionality
+2. `TestMedicalDatabase` - Tests for medical database operations
+3. `TestRetailDatabase` - Tests for retail database operations
+
+#### Test Setup
+
+1. Create a virtual environment and activate it:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# OR
+.venv\Scripts\activate  # On Windows
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up environment variables in a `.env` file:
+
+```env
+# Medical Database
+MEDICAL_DB_HOST=localhost
+MEDICAL_DB_PORT=5432
+MEDICAL_DB_USER=medical_user
+MEDICAL_DB_PASSWORD=medical_password
+MEDICAL_DB_NAME=medical_db
+
+# Retail Database
+RETAIL_DB_HOST=localhost
+RETAIL_DB_PORT=5432
+RETAIL_DB_USER=retail_user
+RETAIL_DB_PASSWORD=retail_password
+RETAIL_DB_NAME=retail_db
+```
+
+#### Running Tests
+
+To run all tests:
+
+```bash
+python -m unittest test.py
+```
+
+To run a specific test class:
+
+```bash
+python -m unittest test.TestDatabaseCommon
+python -m unittest test.TestMedicalDatabase
+python -m unittest test.TestRetailDatabase
+```
+
+To run a specific test method:
+
+```bash
+python -m unittest test.TestDatabaseCommon.test_is_select_query
+```
+
+#### Test Coverage
+
+The tests cover:
+
+- Database connection pool initialization
+- Query validation
+- Medical database operations (queries, inserts)
+- Retail database operations (queries, schema retrieval)
+- Error handling and edge cases
+
+#### Adding New Tests
+
+When adding new tests:
+
+1. Choose the appropriate test class or create a new one if needed
+2. Follow the existing pattern of using `unittest.mock` for database operations
+3. Add proper docstrings and comments
+4. Ensure all edge cases are covered
+
+#### Test Notes
+
+- The tests use mocking to avoid actual database connections
+- Environment variables are loaded using python-dotenv
+- Each test class has its own `setUp` method for initialization
+- The test suite is designed to be extensible for future additions
+
+---
+
+## 🗄️ MCP SQL Integration
+
+### Prerequisites
+
+- Node.js (v14+)
+- PostgreSQL (v12+)
+- npm
+
+### .env Configuration
+
+```
+PGHOST=localhost
+PGPORT=5432
+PGUSER=mcp_user
+PGPASSWORD=mcp_password
+PGDATABASE=mcp_demo
+```
+
+### Setting Up Sample Database
+
+```bash
+npm run setup
+```
+
+This script creates tables (`users`, `products`) and inserts test data.
+
+### Default Postgres User Setup (if needed)
+
+```sql
+psql -U postgres
+CREATE USER mcp_user WITH PASSWORD 'mcp_password';
+ALTER USER mcp_user WITH SUPERUSER;
+```
+
+---
+
+## ▶️ Running the Server
+
+```bash
+cd backend
+npm start
+```
+
+Use `npx @modelcontextprotocol/inspector node server.js` to inspect tools.
+
+---
+
+## 🧪 MCP Tools Overview
+
+### SQL Tools
+
+- `sqlQuery`: Run SQL SELECT queries with optional params
+- `listTables`: Show all accessible tables
+- `tableSchema`: Return schema for selected table
+
+### Drive Tools
+
+- `list`: List files/folders in a given Drive folder
+- `search`: Search files in Drive
+- `read`: Read content from supported file types
+
+### Calendar Tools
+
+- `listCalendars`: List all user calendars
+- `listEvents`: List events from calendar
+- `getEvent`: Show detailed info about one event
+
+---
+
+## 🖥️ Frontend
+
+### Google Drive UI
+
+- Dropdown to filter: files, folders, or all
+- Integrated search bar to find Drive items
+- File preview via MCP read tool
+- External link opens files/folders in Google Drive
+
+### Google Calendar UI
+
+- Button to list all calendars
+- Dropdown to select a calendar
+- Button to list events from selected calendar
+- Toggle to show detailed event metadata
+
+### SQL UI
+
+- Dropdown to select table
+- View schema for selected table
+- SQL input to run queries
+- Live preview of query results
+
+---
+
+## 🔐 Security
+
+- Only allows `SELECT` queries on SQL tool
+- All SQL queries are parameterized
+- OAuth flow is scoped to read/write only what's necessary
+- `token.json` stores sensitive tokens and is gitignored
+
+---
+
+## 🧰 Troubleshooting
+
+- Check `.env` config and credentials.json placement
+- Ensure correct scopes in consent screen
+- Delete `token.json` and reauthenticate if refresh tokens fail
+- Use `console.log` and backend logs to debug request flow
+
+---
+
+## 🏁 First-Time Setup Notes
+
+### Starting the MCP Server for the First Time
+
+1. Open a terminal and navigate to the `backend` directory:
+
+   ```bash
+   cd backend
    ```
+
+2. Start the MCP server directly:
+
+   ```bash
+   node server.js
+   ```
+
+   This step is required the **first time** to trigger the Google OAuth flow for authentication.
+   A browser window will open for you to log in and authorize access to your Google Drive and Calendar.
+
+3. After authentication completes and a `token.json` file is generated, you can use (in a new terminal for first time ):
+   ```bash
+   cd backend
+   npm install
+   node client.js
+   ```
+   for subsequent server runs.
+
+---
+
+### Running the Frontend
+
+1. Open a **new terminal tab or window**, and navigate to the `frontend` directory:
+
+   ```bash
+   cd frontend
+   ```
+
+2. Install frontend dependencies:
+
+   ```bash
    npm install
    ```
 
-2. Set up your environment variables:
+3. Start the React frontend app:
 
-   - Copy the `.env.example` file to `.env`:
-     ```
-     cp .env.example .env
-     ```
-   - Edit the `.env` file with your database credentials and API keys.
-
-3. Set up PostgreSQL:
-
-   - Make sure PostgreSQL is installed and running
-   - Create a database user with the credentials specified in your `.env` file
-   - Create the database specified in your `.env` file
-
-4. Start the server:
-
-   ```
+   ```bash
    npm start
    ```
 
-   The server will automatically create the necessary tables and insert sample data if they don't already exist.
-
-## PostgreSQL Setup
-
-If you're new to PostgreSQL, here's how to get started:
-
-### Installing PostgreSQL
-
-1. **Download PostgreSQL** from the [official website](https://www.postgresql.org/download/)
-2. **Run the installer** and follow the prompts
-3. **During installation**:
-   - You'll be asked to set a password for the superuser
-   - Remember this password - you'll need it to connect to the database
-   - Keep the default port (5432)
-
-### Creating the Database User
-
-1. Connect to PostgreSQL as the superuser:
-
+4. Open your browser and go to:
    ```
-   psql -U postgres
+   http://localhost:3000
    ```
 
-   (On macOS with Homebrew, you might need to use your system username instead of "postgres")
-
-2. Create the user and grant privileges:
-
-   ```sql
-   CREATE USER mcp_user WITH PASSWORD 'mcp_password';
-   ALTER USER mcp_user WITH SUPERUSER;
-   ```
-
-3. Create the database:
-
-   ```sql
-   CREATE DATABASE mcp_demo;
-   ```
-
-4. Grant privileges to the user:
-
-   ```sql
-   GRANT ALL PRIVILEGES ON DATABASE mcp_demo TO mcp_user;
-   ```
-
-5. Connect to the database and grant schema privileges:
-   ```sql
-   \c mcp_demo
-   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO mcp_user;
-   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO mcp_user;
-   ```
-
-## Environment Variables
-
-The following environment variables are used in the application:
-
-- `PGHOST`: PostgreSQL host (default: localhost)
-- `PGPORT`: PostgreSQL port (default: 5432)
-- `PGUSER`: PostgreSQL username
-- `PGPASSWORD`: PostgreSQL password
-- `PGDATABASE`: PostgreSQL database name
-- `OPENAI_API_KEY`: OpenAI API key (if using OpenAI services)
-- `LANGSMITH_API_KEY`: LangSmith API key (if using LangSmith services)
-
-## Troubleshooting
-
-If you encounter connection issues:
-
-1. Make sure PostgreSQL is running
-2. Verify your database credentials in the `.env` file
-3. Check that the database user has the necessary permissions
-4. Try connecting to the database manually using `psql` to verify your credentials
+This will launch the full frontend interface to interact with Google Drive, Google Calendar, and SQL tools.
