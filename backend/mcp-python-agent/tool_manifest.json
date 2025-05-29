@@ -89,6 +89,188 @@
       "parameters": {
         "file_id": { "type": "string", "required": true }
       }
-    }
+    },
+    [
+      {
+        "tool": "list_events",
+        "description": "List upcoming events from a calendar within a specified time range.",
+        "parameters": {
+          "calendar_id": "string (optional)",
+          "max_results": "integer (optional, default: 10)",
+          "time_min": "ISO 8601 datetime (optional)",
+          "time_max": "ISO 8601 datetime (optional)"
+        }
+      },
+      {
+        "tool": "get_event",
+        "description": "Get full details of a specific event using its ID.",
+        "parameters": {
+          "event_id": "string (required)",
+          "calendar_id": "string (optional, default: 'primary')"
+        }
+      },
+      {
+        "tool": "create_event",
+        "description": "Create a new event in the specified calendar.",
+        "parameters": {
+          "summary": "string (required)",
+          "start_datetime": "ISO 8601 datetime (required)",
+          "end_datetime": "ISO 8601 datetime (required)",
+          "calendar_id": "string (optional, default: 'primary')",
+          "location": "string (optional)",
+          "description": "string (optional)",
+          "attendees": "list of strings (optional, email addresses)"
+        }
+      },
+      {
+        "tool": "update_event",
+        "description": "Update fields of an existing calendar event using its ID.",
+        "parameters": {
+          "event_id": "string (required)",
+          "calendar_id": "string (optional, default: 'primary')",
+          "summary": "string (optional)",
+          "location": "string (optional)",
+          "description": "string (optional)",
+          "start_datetime": "ISO 8601 datetime (optional)",
+          "end_datetime": "ISO 8601 datetime (optional)",
+          "attendees": "list of strings (optional, email addresses)"
+        }
+      },
+      {
+        "tool": "delete_event",
+        "description": "Delete an event from the calendar using its ID.",
+        "parameters": {
+          "event_id": "string (required)",
+          "calendar_id": "string (optional, default: 'primary')"
+        }
+      },
+      {
+        "tool": "search_events",
+        "description": "Search for calendar events that match a keyword.",
+        "parameters": {
+          "query": "string (required)",
+          "calendar_id": "string (optional, default: 'primary')",
+          "max_results": "integer (optional, default: 10)"
+        }
+      },
+      {
+        "tool": "list_calendars",
+        "description": "List all accessible calendars for the user.",
+        "parameters": {}
+      },
+      {
+        "tool": "list_files",
+        "description": "List files and folders in a Google Drive folder.",
+        "parameters": {
+          "folder_id": { "type": "string", "required": false },
+          "max_results": { "type": "integer", "required": false }
+        }
+      },
+      {
+        "tool": "search_files",
+        "description": "Search for files and folders in Google Drive by name.",
+        "parameters": {
+          "query": { "type": "string", "required": true },
+          "max_results": { "type": "integer", "required": false }
+        }
+      },
+      {
+        "tool": "read_file",
+        "description": "Download and return the text content of a Google Drive file.",
+        "parameters": {
+          "file_id": { "type": "string", "required": true }
+        }
+      },
+      {
+        "tool": "medical_query",
+        "description": "Run a SELECT SQL query on the medical database.",
+        "parameters": {
+          "query": "string (required)",
+          "params": "list (optional)"
+        }
+      },
+      {
+        "tool": "list_medical_tables",
+        "description": "List all tables in the medical database.",
+        "parameters": {}
+      },
+      {
+        "tool": "medical_table_schema",
+        "description": "Retrieve column information for a medical database table.",
+        "parameters": {
+          "table_name": "string (required)"
+        }
+      },
+      {
+        "tool": "medical_insert",
+        "description": "Insert a new row into a medical database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "data": "dictionary (required)"
+        }
+      },
+      {
+        "tool": "medical_update",
+        "description": "Update rows in a medical database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "data": "dictionary (required)",
+          "where": "dictionary (required)"
+        }
+      },
+      {
+        "tool": "medical_delete",
+        "description": "Delete rows from a medical database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "where": "dictionary (required)"
+        }
+      },
+      {
+        "tool": "retail_query",
+        "description": "Run a SELECT SQL query on the retail database.",
+        "parameters": {
+          "query": "string (required)",
+          "params": "list (optional)"
+        }
+      },
+      {
+        "tool": "list_retail_tables",
+        "description": "List all tables in the retail database.",
+        "parameters": {}
+      },
+      {
+        "tool": "retail_table_schema",
+        "description": "Retrieve column information for a retail database table.",
+        "parameters": {
+          "table_name": "string (required)"
+        }
+      },
+      {
+        "tool": "retail_insert",
+        "description": "Insert a new row into a retail database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "data": "dictionary (required)"
+        }
+      },
+      {
+        "tool": "retail_update",
+        "description": "Update rows in a retail database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "data": "dictionary (required)",
+          "where": "dictionary (required)"
+        }
+      },
+      {
+        "tool": "retail_delete",
+        "description": "Delete rows from a retail database table.",
+        "parameters": {
+          "table_name": "string (required)",
+          "where": "dictionary (required)"
+        }
+      }
+    ]    
   ]
   

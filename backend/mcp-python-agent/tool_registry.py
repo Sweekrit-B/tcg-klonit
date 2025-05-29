@@ -27,5 +27,17 @@ tool_registry = {
     "list_files": list_files,
     "search_files": search_files,
     "read_file": read_file,
+    "medical_query": medical_query,
+    "list_medical_tables": list_medical_tables,
+    "medical_table_schema": medical_table_schema,
+    "medical_insert": medical_insert,
+    "medical_update": medical_update,
+    "medical_delete": medical_delete,
+    "retail_query": retail_query,
+    "list_retail_tables": list_retail_tables,
+    "retail_table_schema": retail_table_schema,
+    "retail_insert": retail_insert,
+    "retail_update": retail_update,
+    "retail_delete": retail_delete,
 }
 
