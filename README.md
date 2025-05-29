@@ -57,6 +57,101 @@ cd backend
 npm install
 ```
 
+### Testing
+
+The project includes a comprehensive test suite for the MCP (Medical and Commercial Products) server implementation.
+
+#### Test Structure
+
+The test suite is organized into three main test classes:
+
+1. `TestDatabaseCommon` - Tests for common database functionality
+2. `TestMedicalDatabase` - Tests for medical database operations
+3. `TestRetailDatabase` - Tests for retail database operations
+
+#### Test Setup
+
+1. Create a virtual environment and activate it:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# OR
+.venv\Scripts\activate  # On Windows
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up environment variables in a `.env` file:
+
+```env
+# Medical Database
+MEDICAL_DB_HOST=localhost
+MEDICAL_DB_PORT=5432
+MEDICAL_DB_USER=medical_user
+MEDICAL_DB_PASSWORD=medical_password
+MEDICAL_DB_NAME=medical_db
+
+# Retail Database
+RETAIL_DB_HOST=localhost
+RETAIL_DB_PORT=5432
+RETAIL_DB_USER=retail_user
+RETAIL_DB_PASSWORD=retail_password
+RETAIL_DB_NAME=retail_db
+```
+
+#### Running Tests
+
+To run all tests:
+
+```bash
+python -m unittest test.py
+```
+
+To run a specific test class:
+
+```bash
+python -m unittest test.TestDatabaseCommon
+python -m unittest test.TestMedicalDatabase
+python -m unittest test.TestRetailDatabase
+```
+
+To run a specific test method:
+
+```bash
+python -m unittest test.TestDatabaseCommon.test_is_select_query
+```
+
+#### Test Coverage
+
+The tests cover:
+
+- Database connection pool initialization
+- Query validation
+- Medical database operations (queries, inserts)
+- Retail database operations (queries, schema retrieval)
+- Error handling and edge cases
+
+#### Adding New Tests
+
+When adding new tests:
+
+1. Choose the appropriate test class or create a new one if needed
+2. Follow the existing pattern of using `unittest.mock` for database operations
+3. Add proper docstrings and comments
+4. Ensure all edge cases are covered
+
+#### Test Notes
+
+- The tests use mocking to avoid actual database connections
+- Environment variables are loaded using python-dotenv
+- Each test class has its own `setUp` method for initialization
+- The test suite is designed to be extensible for future additions
+
 ---
 
 ## 🗄️ MCP SQL Integration
