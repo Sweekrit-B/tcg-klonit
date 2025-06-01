@@ -92,12 +92,17 @@ def get_event(event_id, calendar_id="primary"):
 
 def create_event(summary, start_datetime, end_datetime, calendar_id="primary", location="", description="", attendees=None):
     cal = get_calendar_client()
+    
+    # Get the calendar's timezone
+    calendar_info = cal.calendars().get(calendarId=calendar_id).execute()
+    calendar_timezone = calendar_info.get('timeZone', 'UTC')
+    
     event = {
         "summary": summary,
         "location": location,
         "description": description,
-        "start": {"dateTime": start_datetime, "timeZone": "UTC"},
-        "end": {"dateTime": end_datetime, "timeZone": "UTC"},
+        "start": {"dateTime": start_datetime, "timeZone": calendar_timezone},
+        "end": {"dateTime": end_datetime, "timeZone": calendar_timezone},
     }
     if attendees:
         event["attendees"] = [{"email": e} for e in attendees]

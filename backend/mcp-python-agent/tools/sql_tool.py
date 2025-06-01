@@ -16,6 +16,8 @@ from googleapiclient.discovery import build
 from psycopg2 import pool
 import os
 from dotenv import load_dotenv
+import json
+from datetime import datetime
 
 # === Load environment variables ===
 load_dotenv()
@@ -81,10 +83,11 @@ def execute_query(db_type: str, query: str, params: tuple = None) -> Dict[str, A
                 }
             else:
                 conn.commit()
-                return {"success": True, "message": "Operation completed successfully"}
+                return {"success": True, "data": [{"message": "Operation completed successfully"}]}
     except Exception as e:
         conn.rollback()
-        return {"success": False, "error": str(e)}
+        print("\nDEBUG - Database Error:", str(e))  # Add debug output
+        return {"success": False, "data": [{"error": str(e)}]}
     finally:
         db_pool.put_conn(db_type, conn)
 
@@ -96,7 +99,7 @@ def medical_query(query: str, params: List[Any] = None) -> Dict[str, Any]:
     if not is_select_query(query):
         return {"content": [{"type": "text", "text": "Error: Only SELECT queries are allowed"}]}
     result = execute_query('medical', query, params)
-    return {"content": [{"type": "text", "text": str(result['data']) if result['success'] else f"Error: {result['error']}"}]}
+    return {"content": [{"type": "text", "text": str(result['data']) if result['success'] else f"Error: {result['data'][0]['error']}"}]}
 
 def list_medical_tables() -> Dict[str, Any]:
     query = """
@@ -120,12 +123,79 @@ def medical_table_schema(table_name: str) -> Dict[str, Any]:
     return {"content": [{"type": "text", "text": str(result['data']) if result['success'] else f"Error: {result['error']}"}]}
 
 def medical_insert(table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
-    columns = list(data.keys())
-    values = list(data.values())
-    placeholders = ["%s"] * len(values)
-    query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({', '.join(placeholders)}) RETURNING *"
-    result = execute_query('medical', query, tuple(values))
-    return {"content": [{"type": "text", "text": str(result['data']) if result['success'] else f"Error: {result['error']}"}]}
+    """Insert a new row into a medical database table."""
+    try:
+        # Validate input
+        if not table_name:
+            raise ValueError("table_name is required")
+        if not data or not isinstance(data, dict):
+            raise ValueError("data must be a non-empty dictionary")
+            
+        # Convert appointment_date to string if it's a datetime
+        if 'appointment_date' in data and isinstance(data['appointment_date'], (str, datetime)):
+            if isinstance(data['appointment_date'], datetime):
+                data['appointment_date'] = data['appointment_date'].strftime('%Y-%m-%d %H:%M:%S')
+            
+        # Build query
+        columns = list(data.keys())
+        values = list(data.values())
+        placeholders = ["%s"] * len(values)
+        query = f"""
+            INSERT INTO {table_name} 
+            ({', '.join(columns)}) 
+            VALUES ({', '.join(placeholders)}) 
+            RETURNING *
+        """
+        
+        # Execute query
+        conn = db_pool.get_conn('medical')
+        try:
+            with conn.cursor() as cur:
+                cur.execute(query, tuple(values))
+                result = cur.fetchone()
+                conn.commit()
+                
+                if result:
+                    colnames = [desc[0] for desc in cur.description]
+                    inserted_data = dict(zip(colnames, result))
+                    # Convert datetime objects to strings for JSON serialization
+                    for key, value in inserted_data.items():
+                        if isinstance(value, datetime):
+                            inserted_data[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Successfully scheduled appointment: {json.dumps(inserted_data, indent=2)}"
+                        }]
+                    }
+                else:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": "Insert succeeded but no data was returned"
+                        }]
+                    }
+                    
+        except Exception as db_error:
+            conn.rollback()
+            error_msg = f"Database error: {str(db_error)}"
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": error_msg
+                }]
+            }
+        finally:
+            db_pool.put_conn('medical', conn)
+            
+    except Exception as e:
+        error_msg = f"Error in medical_insert: {str(e)}"
+        return {
+            "content": [{
+                "type": "text",
+                "text": error_msg
+            }]
+        }
 
 def medical_update(table_name: str, data: Dict[str, Any], where: Dict[str, Any]) -> Dict[str, Any]:
     set_items = [f"{k} = %s" for k in data.keys()]
