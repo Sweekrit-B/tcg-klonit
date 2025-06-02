@@ -57,23 +57,45 @@ cd backend
 npm install
 ```
 
-### Testing
+### Python MCP Implementation
 
-The project includes a comprehensive test suite for the MCP (Medical and Commercial Products) server implementation.
+The project includes a Python implementation of the MCP server in the `backend/mcp_python` directory.
 
-#### Test Structure
+#### Setting up Python Environment
 
-The test suite is organized into three main test classes:
-
-1. `TestDatabaseCommon` - Tests for common database functionality
-2. `TestMedicalDatabase` - Tests for medical database operations
-3. `TestRetailDatabase` - Tests for retail database operations
-
-#### Test Setup
-
-1. Create a virtual environment and activate it:
+1. Navigate to the Python backend directory:
 
 ```bash
+cd backend/mcp_python
+```
+
+2. Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# OR
+.venv\Scripts\activate  # On Windows
+```
+
+#### Running the Python MCP Server
+
+With your virtual environment activated, run:
+
+```bash
+mcp dev ../server.py
+```
+
+### Testing
+
+The project includes comprehensive test suites for both the Node.js and Python MCP server implementations.
+
+#### Python Test Setup
+
+1. Navigate to the Python backend directory and activate the virtual environment:
+
+```bash
+cd backend/mcp_python
 python -m venv .venv
 source .venv/bin/activate  # On Unix/macOS
 # OR
@@ -104,7 +126,7 @@ RETAIL_DB_PASSWORD=retail_password
 RETAIL_DB_NAME=retail_db
 ```
 
-#### Running Tests
+#### Running Python Tests
 
 To run all tests:
 
@@ -126,6 +148,14 @@ To run a specific test method:
 python -m unittest test.TestDatabaseCommon.test_is_select_query
 ```
 
+#### Test Structure
+
+The test suite is organized into three main test classes:
+
+1. `TestDatabaseCommon` - Tests for common database functionality
+2. `TestMedicalDatabase` - Tests for medical database operations
+3. `TestRetailDatabase` - Tests for retail database operations
+
 #### Test Coverage
 
 The tests cover:
@@ -135,15 +165,6 @@ The tests cover:
 - Medical database operations (queries, inserts)
 - Retail database operations (queries, schema retrieval)
 - Error handling and edge cases
-
-#### Adding New Tests
-
-When adding new tests:
-
-1. Choose the appropriate test class or create a new one if needed
-2. Follow the existing pattern of using `unittest.mock` for database operations
-3. Add proper docstrings and comments
-4. Ensure all edge cases are covered
 
 #### Test Notes
 
