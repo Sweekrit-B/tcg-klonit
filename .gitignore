@@ -139,3 +139,39 @@ dist
 .yarn/install-state.gz
 .pnp.*backend/.env
 .env
+
+# === Python bytecode files ===
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# === Virtual environment ===
+venv/
+ENV/
+env/
+.venv/
+
+# === dotenv / secrets ===
+.env
+
+# === VS Code and IDEs ===
+.vscode/
+.idea/
+*.swp
+
+# === Logs ===
+*.log
+
+# === Mac system files ===
+.DS_Store
+
+# === Jupyter Notebook Checkpoints ===
+.ipynb_checkpoints/
+
+# === Local database or auth cache files ===
+token.json
+credentials.json
