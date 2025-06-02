@@ -1,3 +1,66 @@
+# 📚 Table of Contents
+
+## Part 1 – Full Stack App Integration of MCP
+
+1. [🔧 Backend](#-backend)  
+   - [Prerequisites](#prerequisites)  
+   - [Google OAuth Setup (For Drive + Calendar Access)](#google-oauth-setup-for-drive--calendar-access)  
+   - [Install Dependencies](#install-dependencies)  
+
+2. [🗄️ MCP SQL Integration](#️-mcp-sql-integration)  
+   - [Prerequisites](#prerequisites-1)  
+   - [.env Configuration](#env-configuration)  
+   - [Setting Up Sample Database](#setting-up-sample-database)  
+   - [Default Postgres User Setup (if needed)](#default-postgres-user-setup-if-needed)  
+
+3. [▶️ Running the Server](#️-running-the-server)
+
+4. [🧪 MCP Tools Overview](#-mcp-tools-overview)  
+   - [SQL Tools](#sql-tools)  
+   - [Drive Tools](#drive-tools)  
+   - [Calendar Tools](#calendar-tools)  
+
+5. [🖥️ Frontend](#️-frontend)  
+   - [Google Drive UI](#google-drive-ui)  
+   - [Google Calendar UI](#google-calendar-ui)  
+   - [SQL UI](#sql-ui)  
+
+6. [🔐 Security](#-security)
+
+7. [🧰 Troubleshooting](#-troubleshooting)
+
+8. [🏁 First-Time Setup Notes](#-first-time-setup-notes)  
+   - [Starting the MCP Server for the First Time](#starting-the-mcp-server-for-the-first-time)  
+   - [Running the Frontend](#running-the-frontend)
+
+---
+
+## Part 2 – Python-Based Agentic Communication
+
+9. [⚙️ Prerequisites](#️-prerequisites)
+
+10. [🚀 Setup Instructions](#-setup)  
+    - [Clone and Navigate](#1-clone-the-repository-and-navigate-to-the-agent-directory)  
+    - [Create Virtual Environment](#2-create-and-activate-a-virtual-environment)  
+    - [Install Dependencies](#3-install-dependencies)  
+    - [Google OAuth](#4-set-up-google-oauth)  
+    - [PostgreSQL Status](#5-check-postgresql-status)  
+    - [Database Setup](#6-set-up-the-database)  
+    - [.env File Configuration](#7-create-a-env-file-with-the-following)
+
+11. [🏃 Running the Agent](#-running-the-agent)
+
+12. [🐛 Troubleshooting Database Issues](#-troubleshooting-database-issues)
+
+13. [🛠️ Available Tools](#️-available-tools)  
+    - [Medical Database Tools](#medical-database-tools)  
+    - [Calendar Tools](#calendar-tools-1)  
+    - [Drive Tools](#drive-tools-1)
+
+14. [💡 Example Usage](#-example-usage)
+
+15. [❗ Error Handling](#-error-handling)
+
 # MCP Integration Project Part 1 - Full Stack App Integration of MCP
 
 This repository contains a full-stack integration of the Model Context Protocol (MCP) with three major tools:
