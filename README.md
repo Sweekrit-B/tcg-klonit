@@ -12,7 +12,7 @@ A medical appointment scheduling assistant that helps patients find doctors and 
 
 1. Clone the repository and navigate to the agent directory:
 ```bash
-cd backend/mcp-python-agent
+cd Local-Agent
 ```
 
 2. Create and activate a virtual environment:
@@ -71,19 +71,28 @@ psql -d medical_db -c "SELECT * FROM physicians;"
 
 7. Create a `.env` file with the following:
 ```
-GOOGLE_API_KEY=your_api_key
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=your_database_name
-DB_USER=your_username
-DB_PASSWORD=your_password
+GOOGLE_API_KEY=your_google_gemini_api_key
+CREDENTIALS_PATH=credentials.json
+TOKEN_PATH=token.json
+
+MEDICAL_DB_HOST=localhost
+MEDICAL_DB_PORT=5432
+MEDICAL_DB_USER=medical_user
+MEDICAL_DB_PASSWORD=medical_password
+MEDICAL_DB_NAME=medical_db
+
+RETAIL_DB_HOST=localhost
+RETAIL_DB_PORT=5432
+RETAIL_DB_USER=retail_user
+RETAIL_DB_PASSWORD=retail_password
+RETAIL_DB_NAME=retail_db
 ```
 
 ## Running the Agent
 
 1. Make sure you're in the agent directory:
 ```bash
-cd backend/mcp-python-agent
+cd Local-Agent
 ```
 
 2. Activate the virtual environment if not already active:
@@ -91,9 +100,11 @@ cd backend/mcp-python-agent
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-3. Run the agent:
+3. Run the agent of choice:
 ```bash
 python3 main.py
+python3 retail_agent.py
+python3 medical_agent.py
 ```
 
 4. On first run, you'll be prompted to authorize via Google OAuth. Follow the URL provided and complete the authorization.
