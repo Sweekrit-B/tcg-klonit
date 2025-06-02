@@ -49,7 +49,7 @@ class TestMedicalDatabase(unittest.TestCase):
         """Set up test environment."""
         print("\n🏥 Setting up medical database test environment...")
         self.mcp = FastMCP("Test Medical")
-        
+
     @patch('mcp_python.database.medical.execute_query')
     def test_medical_query(self, mock_execute):
         """Test medical query execution."""

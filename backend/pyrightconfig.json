@@ -1,0 +1,10 @@
+{
+  "venv": ".venv",
+  "venvPath": ".",
+  "pythonVersion": "3.9",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "useLibraryCodeForTypes": true,
+  "exclude": ["**/node_modules", "**/__pycache__", "**/.*"]
+}
