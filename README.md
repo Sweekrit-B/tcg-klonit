@@ -78,6 +78,12 @@ source .venv/bin/activate  # On Unix/macOS
 .venv\Scripts\activate  # On Windows
 ```
 
+3. Install requirements:
+
+```bash
+pip install -r requirements.txt
+```
+
 #### Running the Python MCP Server
 
 With your virtual environment activated, run:
