@@ -18,10 +18,7 @@ const server = new McpServer({ name: "Demo", version: "1.0.0" }); // Create MCP 
 
 // === PostgreSQL Setup ===
 const { Pool } = pg;
-const pools = {
-  medical: null,
-  retail: null,
-}; // Will hold the PostgreSQL connection pools
+let pool = null; // Will hold the PostgreSQL connection pool
 
 // Load environment variables from .env file if it exists
 dotenv.config();
@@ -542,11 +539,14 @@ server.tool(
 );
 
 // === SQL Tools ===
-// Medical Database Query Tool
 server.tool(
-  "medicalQuery",
+  "sqlQuery",
   {
+    // Takes in our query and types it to a string
     query: z.string().min(1).describe("SQL SELECT query with placeholders"),
+
+    // Takes in the list of parameters and checks all types and allows
+    // strings, numbers, booleans, and nulls and creates an array of them
     params: z
       .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
       .optional()
@@ -554,18 +554,20 @@ server.tool(
   },
   async ({ query, params = [] }) => {
     try {
-      if (!pools.medical) {
-        await initializeMedicalDb();
+      if (!pool) {
+        await initializeDb();
       }
 
+      // Manually parsing the query and finding the actual query
       const normalizedQuery = query.trimStart().toLowerCase();
       const firstWord = normalizedQuery.split(/\s+/)[0];
 
+      // Making sure we only use SELECT queries
       if (firstWord !== "select" && firstWord !== "with") {
         throw new Error("Only SELECT queries are allowed for security reasons");
       }
 
-      const result = await pools.medical.query(query, params);
+      const result = await pool.query(query, params);
 
       return {
         content: [
@@ -588,36 +590,52 @@ server.tool(
   }
 );
 
-// Retail Database Query Tool
+// NOTE: Insert Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "data": {
+//     "name": "John Doe",
+//     "email": "john@example.com"
+//   }
+// }
 server.tool(
-  "retailQuery",
+  "insertData",
   {
-    query: z.string().min(1).describe("SQL SELECT query with placeholders"),
-    params: z
-      .array(z.union([z.string(), z.number(), z.boolean(), z.null()]))
-      .optional()
-      .describe("Array of parameters to substitute in the query"),
+    tableName: z.string().min(1).describe("Name of the table to insert into"),
+    data: z
+      .record(z.any())
+      .describe("Object containing column names and values to insert"),
   },
-  async ({ query, params = [] }) => {
+  async ({ tableName, data }) => {
     try {
-      if (!pools.retail) {
-        await initializeRetailDb();
+      if (!pool) {
+        await initializeDb();
       }
 
-      const normalizedQuery = query.trimStart().toLowerCase();
-      const firstWord = normalizedQuery.split(/\s+/)[0];
+      const columns = Object.keys(data);
+      const values = Object.values(data);
+      const placeholders = values.map((_, index) => `$${index + 1}`);
 
-      if (firstWord !== "select" && firstWord !== "with") {
-        throw new Error("Only SELECT queries are allowed for security reasons");
-      }
+      const query = `
+        INSERT INTO ${tableName} (${columns.join(", ")})
+        VALUES (${placeholders.join(", ")})
+        RETURNING *
+      `;
 
-      const result = await pools.retail.query(query, params);
+      const result = await pool.query(query, values);
 
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(result.rows, null, 2),
+            text: `Successfully inserted data into ${tableName}:\n${JSON.stringify(
+              result.rows[0],
+              null,
+              2
+            )}`,
           },
         ],
       };
@@ -626,7 +644,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `Error executing SQL query: ${error.message}`,
+            text: `Error inserting data: ${error.message}`,
           },
         ],
       };
@@ -634,100 +652,208 @@ server.tool(
   }
 );
 
-// List Medical Tables Tool
-server.tool("listMedicalTables", {}, async () => {
-  try {
-    if (!pools.medical) {
-      await initializeMedicalDb();
-    }
-
-    const result = await pools.medical.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `);
-
-    const tableNames = result.rows.map((row) => row.table_name);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            tableNames.length > 0
-              ? `Available medical tables:\n${tableNames.join("\n")}`
-              : "No tables found in the medical database.",
-        },
-      ],
-    };
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error listing medical tables: ${error.message}`,
-        },
-      ],
-    };
-  }
-});
-
-// List Retail Tables Tool
-server.tool("listRetailTables", {}, async () => {
-  try {
-    if (!pools.retail) {
-      await initializeRetailDb();
-    }
-
-    const result = await pools.retail.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `);
-
-    const tableNames = result.rows.map((row) => row.table_name);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            tableNames.length > 0
-              ? `Available retail tables:\n${tableNames.join("\n")}`
-              : "No tables found in the retail database.",
-        },
-      ],
-    };
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error listing retail tables: ${error.message}`,
-        },
-      ],
-    };
-  }
-});
-
-// Medical Table Schema Tool
+// NOTE: Update Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "data": {
+//     "email": "newemail@example.com"
+//   },
+//   "where": {
+//     "id": 1
+//   }
+// }
 server.tool(
-  "medicalTableSchema",
+  "updateData",
   {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the medical table to describe"),
+    tableName: z.string().min(1).describe("Name of the table to update"),
+    data: z
+      .record(z.any())
+      .describe("Object containing column names and values to update"),
+    where: z
+      .record(z.any())
+      .describe("Object containing conditions for the WHERE clause"),
+  },
+  async ({ tableName, data, where }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      const setClause = Object.keys(data)
+        .map((key, index) => `${key} = $${index + 1}`)
+        .join(", ");
+
+      const whereClause = Object.keys(where)
+        .map(
+          (key, index) => `${key} = $${Object.keys(data).length + index + 1}`
+        )
+        .join(" AND ");
+
+      const values = [...Object.values(data), ...Object.values(where)];
+
+      const query = `
+        UPDATE ${tableName}
+        SET ${setClause}
+        WHERE ${whereClause}
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully updated data in ${tableName}:\n${JSON.stringify(
+              result.rows,
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error updating data: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// NOTE: Delete Data Tool - Basic implementation (5/4)
+// TODO: Add support for batch operations (potentially based off client feedback)
+// TODO: Add audit logging (potentially based off client feedback)
+// Example usage:
+// {
+//   "tableName": "users",
+//   "where": {
+//     "id": 1
+//   }
+// }
+server.tool(
+  "deleteData",
+  {
+    tableName: z.string().min(1).describe("Name of the table to delete from"),
+    where: z
+      .record(z.any())
+      .describe("Object containing conditions for the WHERE clause"),
+  },
+  async ({ tableName, where }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      const whereClause = Object.keys(where)
+        .map((key, index) => `${key} = $${index + 1}`)
+        .join(" AND ");
+
+      const values = Object.values(where);
+
+      const query = `
+        DELETE FROM ${tableName}
+        WHERE ${whereClause}
+        RETURNING *
+      `;
+
+      const result = await pool.query(query, values);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully deleted data from ${tableName}:\n${JSON.stringify(
+              result.rows,
+              null,
+              2
+            )}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error deleting data: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+// NOTE: List Tables Tool: uses query tool to simply show all tables in our database,
+// this can be done using just the query tool but it is easier to just click the button.
+// Can be removed easily
+
+// Takes in no parameters, just prints the tables
+server.tool("listTables", {}, async () => {
+  try {
+    // Checking if pool is crorrectly initialized
+    if (!pool) {
+      await initializeDb();
+    }
+
+    // PostgreSQL query to list tables in the current schema
+    const result = await pool.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+      `);
+
+    const tableNames = result.rows.map((row) => row.table_name);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            tableNames.length > 0
+              ? `Available tables:\n${tableNames.join("\n")}`
+              : "No tables found in the public schema.",
+        },
+      ],
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error listing tables: ${error.message}`,
+        },
+      ],
+    };
+  }
+});
+
+// NOTE: Table Schema Tool: this isn't super necessary, but it is nice to
+// be able to view data about the table, we can remove this easily
+
+// Takes in a table name and returns the schema of that table
+server.tool(
+  "tableSchema",
+  {
+    tableName: z.string().min(1).describe("Name of the table to describe"),
   },
   async ({ tableName }) => {
     try {
-      if (!pools.medical) {
-        await initializeMedicalDb();
+      // Checking if pool is crorrectly initialized
+      if (!pool) {
+        await initializeDb();
       }
 
-      const result = await pools.medical.query(
+      // Get table schema from PostgreSQL information_schema
+      const result = await pool.query(
         `
         SELECT 
           column_name, 
@@ -751,7 +877,7 @@ server.tool(
           content: [
             {
               type: "text",
-              text: `Table '${tableName}' not found in the medical database`,
+              text: `Table '${tableName}' not found in the public schema`,
             },
           ],
         };
@@ -761,7 +887,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `Schema for medical table '${tableName}':\n${JSON.stringify(
+            text: `Schema for table '${tableName}':\n${JSON.stringify(
               result.rows,
               null,
               2
@@ -774,428 +900,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `Error getting medical schema: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-// Retail Table Schema Tool
-server.tool(
-  "retailTableSchema",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the retail table to describe"),
-  },
-  async ({ tableName }) => {
-    try {
-      if (!pools.retail) {
-        await initializeRetailDb();
-      }
-
-      const result = await pools.retail.query(
-        `
-        SELECT 
-          column_name, 
-          data_type, 
-          character_maximum_length,
-          column_default,
-          is_nullable
-        FROM 
-          information_schema.columns
-        WHERE 
-          table_schema = 'public' AND 
-          table_name = $1
-        ORDER BY 
-          ordinal_position
-      `,
-        [tableName]
-      );
-
-      if (result.rows.length === 0) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Table '${tableName}' not found in the retail database`,
-            },
-          ],
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Schema for retail table '${tableName}':\n${JSON.stringify(
-              result.rows,
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error getting retail schema: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-// === SQL Write Operations - Medical Database ===
-server.tool(
-  "medicalInsert",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the medical table to insert into"),
-    data: z
-      .record(z.any())
-      .describe("Object containing column names and values to insert"),
-  },
-  async ({ tableName, data }) => {
-    try {
-      if (!pools.medical) {
-        await initializeMedicalDb();
-      }
-
-      const columns = Object.keys(data);
-      const values = Object.values(data);
-      const placeholders = values.map((_, index) => `$${index + 1}`);
-
-      const query = `
-        INSERT INTO ${tableName} (${columns.join(", ")})
-        VALUES (${placeholders.join(", ")})
-        RETURNING *
-      `;
-
-      const result = await pools.medical.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully inserted data into medical table ${tableName}:\n${JSON.stringify(
-              result.rows[0],
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error inserting data into medical database: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-server.tool(
-  "medicalUpdate",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the medical table to update"),
-    data: z
-      .record(z.any())
-      .describe("Object containing column names and values to update"),
-    where: z
-      .record(z.any())
-      .describe("Object containing conditions for the WHERE clause"),
-  },
-  async ({ tableName, data, where }) => {
-    try {
-      if (!pools.medical) {
-        await initializeMedicalDb();
-      }
-
-      const setClause = Object.keys(data)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(", ");
-
-      const whereClause = Object.keys(where)
-        .map(
-          (key, index) => `${key} = $${Object.keys(data).length + index + 1}`
-        )
-        .join(" AND ");
-
-      const values = [...Object.values(data), ...Object.values(where)];
-
-      const query = `
-        UPDATE ${tableName}
-        SET ${setClause}
-        WHERE ${whereClause}
-        RETURNING *
-      `;
-
-      const result = await pools.medical.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully updated data in medical table ${tableName}:\n${JSON.stringify(
-              result.rows,
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error updating data in medical database: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-server.tool(
-  "medicalDelete",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the medical table to delete from"),
-    where: z
-      .record(z.any())
-      .describe("Object containing conditions for the WHERE clause"),
-  },
-  async ({ tableName, where }) => {
-    try {
-      if (!pools.medical) {
-        await initializeMedicalDb();
-      }
-
-      const whereClause = Object.keys(where)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(" AND ");
-
-      const values = Object.values(where);
-
-      const query = `
-        DELETE FROM ${tableName}
-        WHERE ${whereClause}
-        RETURNING *
-      `;
-
-      const result = await pools.medical.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully deleted data from medical table ${tableName}:\n${JSON.stringify(
-              result.rows,
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error deleting data from medical database: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-// === SQL Write Operations - Retail Database ===
-server.tool(
-  "retailInsert",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the retail table to insert into"),
-    data: z
-      .record(z.any())
-      .describe("Object containing column names and values to insert"),
-  },
-  async ({ tableName, data }) => {
-    try {
-      if (!pools.retail) {
-        await initializeRetailDb();
-      }
-
-      const columns = Object.keys(data);
-      const values = Object.values(data);
-      const placeholders = values.map((_, index) => `$${index + 1}`);
-
-      const query = `
-        INSERT INTO ${tableName} (${columns.join(", ")})
-        VALUES (${placeholders.join(", ")})
-        RETURNING *
-      `;
-
-      const result = await pools.retail.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully inserted data into retail table ${tableName}:\n${JSON.stringify(
-              result.rows[0],
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error inserting data into retail database: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-server.tool(
-  "retailUpdate",
-  {
-    tableName: z.string().min(1).describe("Name of the retail table to update"),
-    data: z
-      .record(z.any())
-      .describe("Object containing column names and values to update"),
-    where: z
-      .record(z.any())
-      .describe("Object containing conditions for the WHERE clause"),
-  },
-  async ({ tableName, data, where }) => {
-    try {
-      if (!pools.retail) {
-        await initializeRetailDb();
-      }
-
-      const setClause = Object.keys(data)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(", ");
-
-      const whereClause = Object.keys(where)
-        .map(
-          (key, index) => `${key} = $${Object.keys(data).length + index + 1}`
-        )
-        .join(" AND ");
-
-      const values = [...Object.values(data), ...Object.values(where)];
-
-      const query = `
-        UPDATE ${tableName}
-        SET ${setClause}
-        WHERE ${whereClause}
-        RETURNING *
-      `;
-
-      const result = await pools.retail.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully updated data in retail table ${tableName}:\n${JSON.stringify(
-              result.rows,
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error updating data in retail database: ${error.message}`,
-          },
-        ],
-      };
-    }
-  }
-);
-
-server.tool(
-  "retailDelete",
-  {
-    tableName: z
-      .string()
-      .min(1)
-      .describe("Name of the retail table to delete from"),
-    where: z
-      .record(z.any())
-      .describe("Object containing conditions for the WHERE clause"),
-  },
-  async ({ tableName, where }) => {
-    try {
-      if (!pools.retail) {
-        await initializeRetailDb();
-      }
-
-      const whereClause = Object.keys(where)
-        .map((key, index) => `${key} = $${index + 1}`)
-        .join(" AND ");
-
-      const values = Object.values(where);
-
-      const query = `
-        DELETE FROM ${tableName}
-        WHERE ${whereClause}
-        RETURNING *
-      `;
-
-      const result = await pools.retail.query(query, values);
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Successfully deleted data from retail table ${tableName}:\n${JSON.stringify(
-              result.rows,
-              null,
-              2
-            )}`,
-          },
-        ],
-      };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error deleting data from retail database: ${error.message}`,
+            text: `Error getting schema: ${error.message}`,
           },
         ],
       };
@@ -1204,278 +909,169 @@ server.tool(
 );
 
 // === Transport + Init ===
-const transport = new StdioServerTransport();
+// Removed duplicate declaration of transport
 
-// Initialize the database and connect to transport
-(async () => {
+async () => {
   try {
-    console.error("Initializing databases...");
+    console.log("⏳ Initializing PostgreSQL...");
+    await initializeDb(); // Setup and seed DB
+    console.log("✅ PostgreSQL ready.");
 
-    // Initialize medical database
-    console.error("Initializing Medical PostgreSQL database...");
-    await initializeMedicalDb();
-    console.error("Medical database initialized.");
-
-    // Initialize retail database
-    console.error("Initializing Retail PostgreSQL database...");
-    await initializeRetailDb();
-    console.error("Retail database initialized.");
-
-    // Connect the transport to the server
-    console.error("Connecting server to transport...");
-    await server.connect(transport);
-    console.error("Server connected to transport.");
+    console.log("🚀 Connecting MCP server to transport...");
+    await server.connect(transport); // Bind MCP server to transport
+    console.log("✅ MCP server connected.");
   } catch (error) {
-    console.error("Error during initialization:", error);
-    process.exit(1);
+    console.error("❌ Initialization failed:", error); // Log errors if any occur
+    process.exit(1); // Exit with failure code
   }
-})();
+};
 
-async function initializeMedicalDb(config = {}) {
-  // Default PostgreSQL connection config for medical database
-  const defaultConfig = {
-    host: process.env.MEDICAL_DB_HOST || "localhost",
-    port: process.env.MEDICAL_DB_PORT || 5432,
-    user: process.env.MEDICAL_DB_USER || "medical_user",
-    password: process.env.MEDICAL_DB_PASSWORD || "medical_password",
-    database: process.env.MEDICAL_DB_NAME || "medical_db",
-    max: process.env.PG_MAX_POOL_SIZE || 20,
-    idleTimeoutMillis: process.env.PG_IDLE_TIMEOUT || 30000,
-  };
-
-  // Merge default config with provided config
-  const connectionConfig = { ...defaultConfig, ...config };
-
-  // Create a new pool
-  pools.medical = new Pool(connectionConfig);
-
-  try {
-    // Test connection
-    const client = await pools.medical.connect();
-    console.error("Successfully connected to Medical PostgreSQL database");
-
-    // Create medical schema tables if they don't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS physicians (
-        physician_id SERIAL PRIMARY KEY,
-        first_name VARCHAR(255),
-        last_name VARCHAR(255),
-        specialty VARCHAR(255)
-      );
-
-      CREATE TABLE IF NOT EXISTS patients (
-        patient_id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE,
-        first_name VARCHAR(255),
-        last_name VARCHAR(255),
-        phone_number VARCHAR(20),
-        date_of_birth DATE,
-        pin VARCHAR(8)
-      );
-
-      CREATE TABLE IF NOT EXISTS appointments (
-        appointment_id SERIAL PRIMARY KEY,
-        patient_id INT REFERENCES patients(patient_id),
-        physician_id INT REFERENCES physicians(physician_id),
-        appointment_datetime TIMESTAMP,
-        appointment_type VARCHAR(255),
-        notes TEXT,
-        google_calendar_event_id VARCHAR(255)
-      );
-
-      CREATE TABLE IF NOT EXISTS treatments (
-        treatment_id SERIAL PRIMARY KEY,
-        patient_id INT REFERENCES patients(patient_id),
-        problem VARCHAR(255),
-        treatment TEXT,
-        physician_id INT REFERENCES physicians(physician_id)
-      );
-    `);
-
-    // Insert sample data for medical database
-    await client.query(`
-      INSERT INTO physicians (first_name, last_name, specialty)
-      SELECT * FROM (VALUES
-        ('Alice', 'Smith', 'Cardiology'),
-        ('Bob', 'Jones', 'Dermatology'),
-        ('Carol', 'Taylor', 'Pediatrics'),
-        ('David', 'Brown', 'Neurology')
-      ) AS v(first_name, last_name, specialty)
-      WHERE NOT EXISTS (SELECT 1 FROM physicians);
-    `);
-
-    // ... rest of your existing medical data initialization ...
-
-    client.release();
-    return pools.medical;
-  } catch (error) {
-    console.error("Error connecting to the medical database:", error);
-    throw error;
-  }
-}
-
-async function initializeRetailDb(config = {}) {
-  // Default PostgreSQL connection config for retail database
-  const defaultConfig = {
-    host: process.env.RETAIL_DB_HOST || "localhost",
-    port: process.env.RETAIL_DB_PORT || 5432,
-    user: process.env.RETAIL_DB_USER || "retail_user",
-    password: process.env.RETAIL_DB_PASSWORD || "retail_password",
-    database: process.env.RETAIL_DB_NAME || "retail_db",
-    max: process.env.PG_MAX_POOL_SIZE || 20,
-    idleTimeoutMillis: process.env.PG_IDLE_TIMEOUT || 30000,
-  };
-
-  // Merge default config with provided config
-  const connectionConfig = { ...defaultConfig, ...config };
-
-  // Create a new pool
-  pools.retail = new Pool(connectionConfig);
-
-  try {
-    // Test connection
-    const client = await pools.retail.connect();
-    console.error("Successfully connected to Retail PostgreSQL database");
-
-    // Create retail schema tables
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS customer_profiles (
-        customer_id SERIAL PRIMARY KEY,
-        email VARCHAR(255) UNIQUE,
-        first_name VARCHAR(255),
-        last_name VARCHAR(255),
-        phone_number VARCHAR(20),
-        address VARCHAR(255),
-        account_creation_date DATE
-      );
-
-      CREATE TABLE IF NOT EXISTS products (
-        product_id SERIAL PRIMARY KEY,
-        product_name VARCHAR(255),
-        description TEXT,
-        price DECIMAL(10, 2)
-      );
-
-      CREATE TABLE IF NOT EXISTS sales (
-        transaction_id SERIAL PRIMARY KEY,
-        customer_id INT REFERENCES customer_profiles(customer_id),
-        product_id INT REFERENCES products(product_id),
-        order_date TIMESTAMP,
-        quantity INT,
-        total_amount DECIMAL(10, 2)
-      );
-
-      CREATE TABLE IF NOT EXISTS customer_engagement (
-        case_id SERIAL PRIMARY KEY,
-        customer_id INT REFERENCES customer_profiles(customer_id),
-        case_open_date TIMESTAMP,
-        case_close_date TIMESTAMP,
-        case_description TEXT,
-        resolution TEXT,
-        agent_id INT
-      );
-    `);
-
-    // Insert sample data for retail database
-    await client.query(`
-      INSERT INTO customer_profiles (email, first_name, last_name, phone_number, address, account_creation_date)
-      SELECT * FROM (VALUES
-        ('customer1@example.com', 'John', 'Smith', '555-0101', '123 Main St', '2023-01-01'::DATE),
-        ('customer2@example.com', 'Jane', 'Doe', '555-0102', '456 Oak Ave', '2023-01-02'::DATE),
-        ('customer3@example.com', 'Bob', 'Johnson', '555-0103', '789 Pine Rd', '2023-01-03'::DATE),
-        ('customer4@example.com', 'Alice', 'Brown', '555-0104', '321 Elm St', '2023-01-04'::DATE),
-        ('customer5@example.com', 'Charlie', 'Davis', '555-0105', '654 Maple Dr', '2023-01-05'::DATE),
-        ('customer6@example.com', 'Eva', 'Wilson', '555-0106', '987 Cedar Ln', '2023-01-06'::DATE),
-        ('customer7@example.com', 'Frank', 'Miller', '555-0107', '147 Birch Rd', '2023-01-07'::DATE),
-        ('customer8@example.com', 'Grace', 'Taylor', '555-0108', '258 Spruce Ave', '2023-01-08'::DATE),
-        ('customer9@example.com', 'Henry', 'Anderson', '555-0109', '369 Willow St', '2023-01-09'::DATE),
-        ('customer10@example.com', 'Ivy', 'Thomas', '555-0110', '741 Pine Ct', '2023-01-10'::DATE)
-      ) AS v(email, first_name, last_name, phone_number, address, account_creation_date)
-      WHERE NOT EXISTS (SELECT 1 FROM customer_profiles);
-
-      INSERT INTO products (product_name, description, price)
-      SELECT * FROM (VALUES
-        ('Laptop Pro', 'High-performance laptop', 1299.99),
-        ('Smartphone X', 'Latest smartphone model', 899.99),
-        ('Wireless Earbuds', 'Premium wireless earbuds', 199.99),
-        ('Smart Watch', 'Fitness tracking smartwatch', 299.99),
-        ('Tablet Ultra', '12-inch tablet with stylus', 699.99),
-        ('Desktop PC', 'Gaming desktop computer', 1499.99),
-        ('Camera Pro', 'Professional DSLR camera', 999.99),
-        ('Monitor 4K', '32-inch 4K monitor', 499.99),
-        ('Printer All-in-One', 'Print, scan, and copy', 249.99),
-        ('Gaming Console', 'Latest gaming console', 399.99)
-      ) AS v(product_name, description, price)
-      WHERE NOT EXISTS (SELECT 1 FROM products);
-    `);
-
-    // Insert sample sales data
-    await client.query(`
-      INSERT INTO sales (customer_id, product_id, order_date, quantity, total_amount)
-      SELECT 
-        customer_id,
-        product_id,
-        NOW() - (INTERVAL '1 day' * FLOOR(RANDOM() * 30)),
-        FLOOR(RANDOM() * 3) + 1,
-        products.price * (FLOOR(RANDOM() * 3) + 1)
-      FROM 
-        customer_profiles 
-        CROSS JOIN products 
-      WHERE 
-        RANDOM() < 0.3
-        AND NOT EXISTS (SELECT 1 FROM sales);
-    `);
-
-    // Insert sample customer engagement data
-    await client.query(`
-      INSERT INTO customer_engagement (
-        customer_id, 
-        case_open_date, 
-        case_close_date, 
-        case_description, 
-        resolution, 
-        agent_id
-      )
-      SELECT
-        customer_id,
-        NOW() - (INTERVAL '1 day' * FLOOR(RANDOM() * 30)),
-        CASE WHEN RANDOM() < 0.8 
-          THEN NOW() - (INTERVAL '1 day' * FLOOR(RANDOM() * 15))
-          ELSE NULL 
-        END,
-        CASE FLOOR(RANDOM() * 3)
-          WHEN 0 THEN 'Product inquiry'
-          WHEN 1 THEN 'Technical support'
-          ELSE 'Billing question'
-        END,
-        CASE WHEN RANDOM() < 0.8 
-          THEN 'Issue resolved'
-          ELSE NULL 
-        END,
-        FLOOR(RANDOM() * 5) + 1
-      FROM 
-        customer_profiles
-      WHERE 
-        RANDOM() < 0.5
-        AND NOT EXISTS (SELECT 1 FROM customer_engagement);
-    `);
-
-    client.release();
-    return pools.retail;
-  } catch (error) {
-    console.error("Error connecting to the retail database:", error);
-    throw error;
-  }
-}
-
-// Main initialization function
 async function initializeDb(config = {}) {
+  // Default PostgreSQL connection config
+  const defaultConfig = {
+    host: process.env.PGHOST || "localhost",
+    port: process.env.PGPORT || 5432,
+    user: process.env.PGUSER || "mcp_user",
+    password: process.env.PGPASSWORD || "mcp_password",
+    database: process.env.PGDATABASE || "mcp_demo",
+    max: 20,
+    idleTimeoutMillis: 30000,
+  };
+
+  // Merge default config with provided config
+  const connectionConfig = { ...defaultConfig, ...config };
+
+  // Create a new pool
+  pool = new Pool(connectionConfig);
+
   try {
-    await initializeMedicalDb(config);
-    await initializeRetailDb(config);
-    return true;
+    // Test connection
+    const client = await pool.connect();
+    console.error("Successfully connected to PostgreSQL database");
+
+    // --- Remove old demo tables if they exist ---
+    await client.query(`
+    DROP TABLE IF EXISTS appointments;
+    DROP TABLE IF EXISTS treatments;
+    DROP TABLE IF EXISTS patients;
+    DROP TABLE IF EXISTS physicians;
+    DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS products;
+  `);
+
+    // --- Create new schema tables if they don't exist ---
+    await client.query(`
+    CREATE TABLE IF NOT EXISTS physicians (
+      physician_id SERIAL PRIMARY KEY,
+      first_name VARCHAR(255),
+      last_name VARCHAR(255),
+      specialty VARCHAR(255),
+      label TEXT DEFAULT 'Physician Information'
+    );
+
+    CREATE TABLE IF NOT EXISTS patients (
+      patient_id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE,
+      first_name VARCHAR(255),
+      last_name VARCHAR(255),
+      phone_number VARCHAR(20),
+      date_of_birth DATE,
+      pin VARCHAR(8),
+      label TEXT DEFAULT 'Patient Information'
+    );
+
+    CREATE TABLE IF NOT EXISTS appointments (
+      appointment_id SERIAL PRIMARY KEY,
+      patient_id INT REFERENCES patients(patient_id),
+      physician_id INT REFERENCES physicians(physician_id),
+      appointment_datetime TIMESTAMP,
+      appointment_type VARCHAR(255),
+      notes TEXT,
+      google_calendar_event_id VARCHAR(255),
+      label TEXT DEFAULT 'Appointments Information'
+    );
+
+    CREATE TABLE IF NOT EXISTS treatments (
+      treatment_id SERIAL PRIMARY KEY,
+      patient_id INT REFERENCES patients(patient_id),
+      problem VARCHAR(255),
+      treatment TEXT,
+      physician_id INT REFERENCES physicians(physician_id),
+      label TEXT DEFAULT 'Treatments Information'
+    );
+  `);
+
+    // --- Insert sample/mock data if tables are empty ---
+    // Physicians
+    await client.query(`
+    INSERT INTO physicians (first_name, last_name, specialty,label)
+    SELECT * FROM (VALUES
+      ('Alice', 'Smith', 'Cardiology'),
+      ('Bob', 'Jones', 'Dermatology'),
+      ('Carol', 'Taylor', 'Pediatrics'),
+      ('David', 'Brown', 'Neurology')
+    ) AS v(first_name, last_name, specialty)
+    WHERE NOT EXISTS (SELECT 1 FROM physicians);
+  `);
+
+    // Patients
+    await client.query(`
+    INSERT INTO patients (email, first_name, last_name, phone_number, date_of_birth, pin,label)
+    SELECT * FROM (VALUES
+      ('patient1@example.com', 'John', 'Doe', '555-0001', '1980-01-01'::DATE, '12345678'),
+      ('patient2@example.com', 'Jane', 'Smith', '555-0002', '1985-02-02'::DATE, '23456789'),
+      ('patient3@example.com', 'Jim', 'Brown', '555-0003', '1990-03-03'::DATE, '34567890'),
+      ('patient4@example.com', 'Jill', 'White', '555-0004', '1975-04-04'::DATE, '45678901'),
+      ('patient5@example.com', 'Jack', 'Black', '555-0005', '2000-05-05'::DATE, '56789012'),
+      ('patient6@example.com', 'Jenny', 'Green', '555-0006', '1995-06-06'::DATE, '67890123'),
+      ('patient7@example.com', 'Joe', 'Blue', '555-0007', '1988-07-07'::DATE, '78901234'),
+      ('patient8@example.com', 'Jess', 'Red', '555-0008', '1992-08-08'::DATE, '89012345'),
+      ('patient9@example.com', 'Jerry', 'Yellow', '555-0009', '1983-09-09'::DATE, '90123456'),
+      ('patient10@example.com', 'Jordan', 'Purple', '555-0010', '1978-10-10'::DATE, '01234567')
+    ) AS v(email, first_name, last_name, phone_number, date_of_birth, pin)
+    WHERE NOT EXISTS (SELECT 1 FROM patients);
+  `);
+
+    // Appointments
+    await client.query(`
+    INSERT INTO appointments (patient_id, physician_id, appointment_datetime, appointment_type, notes, google_calendar_event_id,label)
+    SELECT * FROM (VALUES
+      (1, 1, '2024-05-01 09:00:00'::TIMESTAMP, 'Checkup', 'Routine checkup', 'evt1'),
+      (2, 2, '2024-05-02 10:00:00'::TIMESTAMP, 'Consultation', 'Discuss symptoms', 'evt2'),
+      (3, 3, '2024-05-03 11:00:00'::TIMESTAMP, 'Follow-up', 'Review test results', 'evt3'),
+      (4, 4, '2024-05-04 12:00:00'::TIMESTAMP, 'Checkup', 'Annual physical', 'evt4'),
+      (5, 1, '2024-05-05 13:00:00'::TIMESTAMP, 'Consultation', 'New issue', 'evt5'),
+      (6, 2, '2024-05-06 14:00:00'::TIMESTAMP, 'Checkup', 'Routine checkup', 'evt6'),
+      (7, 3, '2024-05-07 15:00:00'::TIMESTAMP, 'Consultation', 'Discuss medication', 'evt7'),
+      (8, 4, '2024-05-08 16:00:00'::TIMESTAMP, 'Follow-up', 'Post-surgery', 'evt8'),
+      (9, 1, '2024-05-09 17:00:00'::TIMESTAMP, 'Checkup', 'Routine checkup', 'evt9'),
+      (10, 2, '2024-05-10 18:00:00'::TIMESTAMP, 'Consultation', 'Discuss results', 'evt10')
+    ) AS v(patient_id, physician_id, appointment_datetime, appointment_type, notes, google_calendar_event_id)
+    WHERE NOT EXISTS (SELECT 1 FROM appointments);
+  `);
+
+    // Treatments
+    await client.query(`
+    INSERT INTO treatments (patient_id, problem, treatment, physician_id,label)
+    SELECT * FROM (VALUES
+      (1, 'Hypertension', 'Medication A', 1),
+      (2, 'Diabetes', 'Medication B', 2),
+      (3, 'Asthma', 'Inhaler', 3),
+      (4, 'Migraine', 'Painkillers', 4),
+      (5, 'Allergy', 'Antihistamines', 1),
+      (6, 'Flu', 'Rest and fluids', 2),
+      (7, 'Back Pain', 'Physical therapy', 3),
+      (8, 'Depression', 'Therapy', 4),
+      (9, 'High Cholesterol', 'Diet change', 1),
+      (10, 'Anxiety', 'Counseling', 2)
+    ) AS v(patient_id, problem, treatment, physician_id)
+    WHERE NOT EXISTS (SELECT 1 FROM treatments);
+  `);
+
+    client.release();
+    return pool;
   } catch (error) {
-    console.error("Error initializing databases:", error);
+    console.error("Error connecting to the database:", error);
     throw error;
   }
 }
@@ -1501,3 +1097,181 @@ server.resource(
     ],
   })
 );
+
+// Tool to get current labels for all tables
+server.tool("getLabels", {}, async () => {
+  try {
+    if (!pool) {
+      await initializeDb();
+    }
+
+    // Query to get one example of each label from each table
+    const queries = [
+      `SELECT 'physicians' as table_name, label FROM physicians LIMIT 1`,
+      `SELECT 'patients' as table_name, label FROM patients LIMIT 1`,
+      `SELECT 'appointments' as table_name, label FROM appointments LIMIT 1`,
+      `SELECT 'treatments' as table_name, label FROM treatments LIMIT 1`
+    ];
+
+    // Execute all queries
+    const results = await Promise.all(
+      queries.map(query => pool.query(query))
+    );
+
+    // Combine results
+    const labels = results
+      .map(result => result.rows[0])
+      .filter(row => row); // Filter out empty results
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Current labels:\n${JSON.stringify(labels, null, 2)}`
+        }
+      ]
+    };
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error fetching labels: ${error.message}`
+        }
+      ]
+    };
+  }
+});
+
+// Tool to update a table's label
+server.tool(
+  "updateLabel",
+  {
+    tableName: z.string().min(1).describe("Name of the table to update labels for (physicians, patients, appointments, or treatments)"),
+    newLabel: z.string().min(1).describe("New label text to set for the table")
+  },
+  async ({ tableName, newLabel }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      // Validate tableName to prevent SQL injection
+      const validTables = ['physicians', 'patients', 'appointments', 'treatments'];
+      if (!validTables.includes(tableName)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Invalid table name. Must be one of: ${validTables.join(', ')}`
+            }
+          ]
+        };
+      }
+
+      // Update all records in the table to have the new label
+      const query = `UPDATE ${tableName} SET label = $1`;
+      await pool.query(query, [newLabel]);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Successfully updated label for ${tableName} to "${newLabel}"`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error updating label: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+);
+
+// Tool to get a specific table's current label
+server.tool(
+  "getTableLabel",
+  {
+    tableName: z.string().min(1).describe("Name of the table to get label for (physicians, patients, appointments, or treatments)")
+  },
+  async ({ tableName }) => {
+    try {
+      if (!pool) {
+        await initializeDb();
+      }
+
+      // Validate tableName to prevent SQL injection
+      const validTables = ['physicians', 'patients', 'appointments', 'treatments'];
+      if (!validTables.includes(tableName)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error: Invalid table name. Must be one of: ${validTables.join(', ')}`
+            }
+          ]
+        };
+      }
+
+      // Get the label from the first record
+      const query = `SELECT label FROM ${tableName} LIMIT 1`;
+      const result = await pool.query(query);
+
+      if (result.rows.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `No records found in ${tableName}`
+            }
+          ]
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Current label for ${tableName}: "${result.rows[0].label}"`
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error getting label: ${error.message}`
+          }
+        ]
+      };
+    }
+  }
+);
+
+// Define the transport for the server
+// Retain this declaration of transport
+const transport = new StdioServerTransport();
+
+// Initialize the database and connect to transport
+(async () => {
+  try {
+    console.error("Initializing PostgreSQL database connection...");
+    await initializeDb();
+    console.error("Database connection initialized.");
+
+    // Connect the transport to the server
+    console.error("Connecting server to transport...");
+    await server.connect(transport);
+    console.error("Server connected to transport.");
+  } catch (error) {
+    console.error("Error during initialization:", error);
+    process.exit(1);
+  }
+})();
