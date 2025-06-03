@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 import asyncpg
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+from datetime import date, datetime
 
 # Load environment variables
 load_dotenv()
@@ -121,16 +122,16 @@ class SqlServer:
         
         # Insert patients
         patients_data = [
-            ('patient1@example.com', 'John', 'Doe', '555-0001', '1980-01-01', '12345678', 'Patient Information'),
-            ('patient2@example.com', 'Jane', 'Smith', '555-0002', '1985-02-02', '23456789', 'Patient Information'),
-            ('patient3@example.com', 'Jim', 'Brown', '555-0003', '1990-03-03', '34567890', 'Patient Information'),
-            ('patient4@example.com', 'Jill', 'White', '555-0004', '1975-04-04', '45678901', 'Patient Information'),
-            ('patient5@example.com', 'Jack', 'Black', '555-0005', '2000-05-05', '56789012', 'Patient Information'),
-            ('patient6@example.com', 'Jenny', 'Green', '555-0006', '1995-06-06', '67890123', 'Patient Information'),
-            ('patient7@example.com', 'Joe', 'Blue', '555-0007', '1988-07-07', '78901234', 'Patient Information'),
-            ('patient8@example.com', 'Jess', 'Red', '555-0008', '1992-08-08', '89012345', 'Patient Information'),
-            ('patient9@example.com', 'Jerry', 'Yellow', '555-0009', '1983-09-09', '90123456', 'Patient Information'),
-            ('patient10@example.com', 'Jordan', 'Purple', '555-0010', '1978-10-10', '01234567', 'Patient Information')
+            ('patient1@example.com', 'John', 'Doe', '555-0001', date(1980, 1, 1), '12345678', 'Patient Information'),
+            ('patient2@example.com', 'Jane', 'Smith', '555-0002', date(1985, 2, 2), '23456789', 'Patient Information'),
+            ('patient3@example.com', 'Jim', 'Brown', '555-0003', date(1990, 3, 3), '34567890', 'Patient Information'),
+            ('patient4@example.com', 'Jill', 'White', '555-0004', date(1975, 4, 4), '45678901', 'Patient Information'),
+            ('patient5@example.com', 'Jack', 'Black', '555-0005', date(2000, 5, 5), '56789012', 'Patient Information'),
+            ('patient6@example.com', 'Jenny', 'Green', '555-0006', date(1995, 6, 6), '67890123', 'Patient Information'),
+            ('patient7@example.com', 'Joe', 'Blue', '555-0007', date(1988, 7, 7), '78901234', 'Patient Information'),
+            ('patient8@example.com', 'Jess', 'Red', '555-0008', date(1992, 8, 8), '89012345', 'Patient Information'),
+            ('patient9@example.com', 'Jerry', 'Yellow', '555-0009', date(1983, 9, 9), '90123456', 'Patient Information'),
+            ('patient10@example.com', 'Jordan', 'Purple', '555-0010', date(1978, 10, 10), '01234567', 'Patient Information')
         ]
         
         count = await conn.fetchval("SELECT COUNT(*) FROM patients")
@@ -142,16 +143,16 @@ class SqlServer:
         
         # Insert appointments
         appointments_data = [
-            (1, 1, '2024-05-01 09:00:00', 'Checkup', 'Routine checkup', 'evt1', 'Appointments Information'),
-            (2, 2, '2024-05-02 10:00:00', 'Consultation', 'Discuss symptoms', 'evt2', 'Appointments Information'),
-            (3, 3, '2024-05-03 11:00:00', 'Follow-up', 'Review test results', 'evt3', 'Appointments Information'),
-            (4, 4, '2024-05-04 12:00:00', 'Checkup', 'Annual physical', 'evt4', 'Appointments Information'),
-            (5, 1, '2024-05-05 13:00:00', 'Consultation', 'New issue', 'evt5', 'Appointments Information'),
-            (6, 2, '2024-05-06 14:00:00', 'Checkup', 'Routine checkup', 'evt6', 'Appointments Information'),
-            (7, 3, '2024-05-07 15:00:00', 'Consultation', 'Discuss medication', 'evt7', 'Appointments Information'),
-            (8, 4, '2024-05-08 16:00:00', 'Follow-up', 'Post-surgery', 'evt8', 'Appointments Information'),
-            (9, 1, '2024-05-09 17:00:00', 'Checkup', 'Routine checkup', 'evt9', 'Appointments Information'),
-            (10, 2, '2024-05-10 18:00:00', 'Consultation', 'Discuss results', 'evt10', 'Appointments Information')
+            (1, 1, datetime(2024, 5, 1, 9, 0), 'Checkup', 'Routine checkup', 'evt1', 'Appointments Information'),
+            (2, 2, datetime(2024, 5, 2, 10, 0), 'Consultation', 'Discuss symptoms', 'evt2', 'Appointments Information'),
+            (3, 3, datetime(2024, 5, 3, 11, 0), 'Follow-up', 'Review test results', 'evt3', 'Appointments Information'),
+            (4, 4, datetime(2024, 5, 4, 12, 0), 'Checkup', 'Annual physical', 'evt4', 'Appointments Information'),
+            (5, 1, datetime(2024, 5, 5, 13, 0), 'Consultation', 'New issue', 'evt5', 'Appointments Information'),
+            (6, 2, datetime(2024, 5, 6, 14, 0), 'Checkup', 'Routine checkup', 'evt6', 'Appointments Information'),
+            (7, 3, datetime(2024, 5, 7, 15, 0), 'Consultation', 'Discuss medication', 'evt7', 'Appointments Information'),
+            (8, 4, datetime(2024, 5, 8, 16, 0), 'Follow-up', 'Post-surgery', 'evt8', 'Appointments Information'),
+            (9, 1, datetime(2024, 5, 9, 17, 0), 'Checkup', 'Routine checkup', 'evt9', 'Appointments Information'),
+            (10, 2, datetime(2024, 5, 10, 18, 0), 'Consultation', 'Discuss results', 'evt10', 'Appointments Information')
         ]
         
         count = await conn.fetchval("SELECT COUNT(*) FROM appointments")
