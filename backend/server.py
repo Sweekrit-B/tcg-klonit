@@ -7,8 +7,13 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from datetime import date, datetime
 
+
 # Load environment variables
 load_dotenv()
+print("PGUSER:", os.getenv("PGUSER"))
+print("PGPASSWORD:", os.getenv("PGPASSWORD"))
+print("PGDATABASE:", os.getenv("PGDATABASE"))
+
 
 class DatabaseConfig(BaseModel):
     host: str = Field(default_factory=lambda: os.getenv("PGHOST", "localhost"))
@@ -22,6 +27,12 @@ class SqlServer:
         self.config = config or DatabaseConfig()
         self.pool: Optional[asyncpg.Pool] = None
         self.valid_tables = ['physicians', 'patients', 'appointments', 'treatments']
+    
+    def json_serializer(self, obj):
+        """JSON serializer for objects not serializable by default json code"""
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
     
     async def initialize_db(self) -> None:
         """Initialize database connection and create tables with sample data"""
@@ -213,7 +224,7 @@ class SqlServer:
                 return {
                     "content": [{
                         "type": "text",
-                        "text": json.dumps(result, indent=2, default=str)
+                        "text": json.dumps(result, indent=2, default=self.json_serializer)
                     }]
                 }
                 
@@ -256,7 +267,7 @@ class SqlServer:
                 return {
                     "content": [{
                         "type": "text",
-                        "text": f"Successfully inserted data into {table_name}:\n{json.dumps(result, indent=2, default=str)}"
+                        "text": f"Successfully inserted data into {table_name}:\n{json.dumps(result, indent=2, default=self.json_serializer)}"
                     }]
                 }
                 
@@ -301,7 +312,7 @@ class SqlServer:
                 return {
                     "content": [{
                         "type": "text",
-                        "text": f"Successfully updated data in {table_name}:\n{json.dumps(result, indent=2, default=str)}"
+                        "text": f"Successfully updated data in {table_name}:\n{json.dumps(result, indent=2, default=self.json_serializer)}"
                     }]
                 }
                 
@@ -344,7 +355,7 @@ class SqlServer:
                 return {
                     "content": [{
                         "type": "text",
-                        "text": f"Successfully deleted data from {table_name}:\n{json.dumps(result, indent=2, default=str)}"
+                        "text": f"Successfully deleted data from {table_name}:\n{json.dumps(result, indent=2, default=self.json_serializer)}"
                     }]
                 }
                 
@@ -426,7 +437,7 @@ class SqlServer:
                 return {
                     "content": [{
                         "type": "text",
-                        "text": f"Schema for table '{table_name}':\n{json.dumps(result, indent=2, default=str)}"
+                        "text": f"Schema for table '{table_name}':\n{json.dumps(result, indent=2, default=self.json_serializer)}"
                     }]
                 }
                 
@@ -548,6 +559,234 @@ class SqlServer:
                 }]
             }
     
+    async def update_patient_label(self, patient_id: int, new_label: str) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "UPDATE patients SET label = $1 WHERE patient_id = $2 RETURNING *"
+
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(query, new_label, patient_id)
+
+                if row:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Label updated for patient {patient_id}:\n{json.dumps(dict(row), indent=2, default=self.json_serializer)}"
+                        }]
+                    }
+                else:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Patient with ID {patient_id} not found."
+                        }]
+                    }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error updating patient label: {str(error)}"
+                }]
+            }
+    
+    async def get_physician_labels(self) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "SELECT physician_id, first_name, last_name, label FROM physicians ORDER BY physician_id"
+
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(query)
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": f"Physician labels:\n{json.dumps([dict(row) for row in rows], indent=2, default=self.json_serializer)}"
+                    }]
+                }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error fetching physician labels: {str(error)}"
+                }]
+            }
+
+    async def get_patient_labels(self) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "SELECT patient_id, first_name, last_name, label FROM patients ORDER BY patient_id"
+
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(query)
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": f"Patient labels:\n{json.dumps([dict(row) for row in rows], indent=2, default=self.json_serializer)}"
+                    }]
+                }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error fetching patient labels: {str(error)}"
+                }]
+            }
+    
+    async def update_appointment_label(self, appointment_id: int, new_label: str) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "UPDATE appointments SET label = $1 WHERE appointment_id = $2 RETURNING *"
+
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(query, new_label, appointment_id)
+
+                if row:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Label updated for appointment {appointment_id}:\n{json.dumps(dict(row), indent=2, default=self.json_serializer)}"
+                        }]
+                    }
+                else:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Appointment with ID {appointment_id} not found."
+                        }]
+                    }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error updating appointment label: {str(error)}"
+                }]
+            }
+
+    async def update_treatment_label(self, treatment_id: int, new_label: str) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "UPDATE treatments SET label = $1 WHERE treatment_id = $2 RETURNING *"
+
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(query, new_label, treatment_id)
+
+                if row:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Label updated for treatment {treatment_id}:\n{json.dumps(dict(row), indent=2, default=self.json_serializer)}"
+                        }]
+                    }
+                else:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Treatment with ID {treatment_id} not found."
+                        }]
+                    }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error updating treatment label: {str(error)}"
+                }]
+            }
+
+    async def update_physician_label(self, physician_id: int, new_label: str) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "UPDATE physicians SET label = $1 WHERE physician_id = $2 RETURNING *"
+
+            async with self.pool.acquire() as conn:
+                row = await conn.fetchrow(query, new_label, physician_id)
+
+                if row:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Label updated for physician {physician_id}:\n{json.dumps(dict(row), indent=2, default=self.json_serializer)}"
+                        }]
+                    }
+                else:
+                    return {
+                        "content": [{
+                            "type": "text",
+                            "text": f"Physician with ID {physician_id} not found."
+                        }]
+                    }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error updating physician label: {str(error)}"
+                }]
+            }
+
+    async def get_appointment_labels(self) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "SELECT appointment_id, appointment_type, appointment_datetime, label FROM appointments ORDER BY appointment_id"
+
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(query)
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": f"Appointment labels:\n{json.dumps([dict(row) for row in rows], indent=2, default=self.json_serializer)}"
+                    }]
+                }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error fetching appointment labels: {str(error)}"
+                }]
+            }
+        
+    async def get_treatment_labels(self) -> Dict[str, Any]:
+        try:
+            if not self.pool:
+                await self.initialize_db()
+
+            query = "SELECT treatment_id, problem, treatment, label FROM treatments ORDER BY treatment_id"
+
+            async with self.pool.acquire() as conn:
+                rows = await conn.fetch(query)
+                return {
+                    "content": [{
+                        "type": "text",
+                        "text": f"Treatment labels:\n{json.dumps([dict(row) for row in rows], indent=2, default=self.json_serializer)}"
+                    }]
+                }
+
+        except Exception as error:
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": f"Error fetching treatment labels: {str(error)}"
+                }]
+            }
+
     async def close(self) -> None:
         """Close database connection pool"""
         if self.pool:
