@@ -67,7 +67,7 @@ async def run_label_edit_test():
     physician_update = await db.update_physician_label(2, "Primary Consultant")
     print(physician_update["content"][0]["text"])
 
-    # Step 14: Confirm physician label updates
+    # Step 14: Confirm physician label update
     print("\n[Physician Labels After Update]")
     physician_labels = await db.get_physician_labels()
     print(physician_labels["content"][0]["text"])
